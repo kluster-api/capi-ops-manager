@@ -48,6 +48,8 @@ spec:
                     type: string
                   kind:
                     type: string
+                  kind_image:
+                    type: string
                 required:
                 - capi
                 - clusterawsadm
@@ -55,6 +57,7 @@ spec:
                 - iamAuthenticator
                 - infrastructure
                 - kind
+                - kind_image
                 type: object
               capg:
                 properties:
@@ -66,11 +69,14 @@ spec:
                     type: string
                   kind:
                     type: string
+                  kind_image:
+                    type: string
                 required:
                 - capi
                 - clusterctl
                 - infrastructure
                 - kind
+                - kind_image
                 type: object
               capz:
                 properties:
@@ -82,11 +88,14 @@ spec:
                     type: string
                   kind:
                     type: string
+                  kind_image:
+                    type: string
                 required:
                 - capi
                 - clusterctl
                 - infrastructure
                 - kind
+                - kind_image
                 type: object
             required:
             - capa

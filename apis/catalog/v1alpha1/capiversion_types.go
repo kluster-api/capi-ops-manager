@@ -28,9 +28,10 @@ type CapiVersionSpec struct {
 }
 
 type GenericVersionMatrix struct {
-	KIND           string `json:"kind"`
+	Kind           string `json:"kind"`
+	KindImage      string `json:"kind_image"`
 	Clusterctl     string `json:"clusterctl"`
-	CAPI           string `json:"capi"`
+	Capi           string `json:"capi"`
 	Infrastructure string `json:"infrastructure"`
 }
 
