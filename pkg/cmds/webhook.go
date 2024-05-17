@@ -18,14 +18,16 @@ package cmds
 
 import (
 	"context"
-	"crypto/tls"
 	"os"
 	"path/filepath"
+
+	opsapi "go.klusters.dev/capi-ops-manager/apis/ops/v1alpha1"
 
 	"github.com/spf13/cobra"
 	v "gomodules.xyz/x/version"
 	v1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/types"
+	clientscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
@@ -40,16 +42,11 @@ import (
 func NewCmdWebhook(ctx context.Context) *cobra.Command {
 	certDir := "/var/serving-cert"
 	var (
-		QPS   float32 = 1e6
-		Burst int     = 1e6
-
 		webhookName string
 
 		metricsAddr          string
 		enableLeaderElection bool
 		probeAddr            string
-		secureMetrics        bool
-		enableHTTP2          bool
 	)
 
 	cmd := &cobra.Command{
@@ -62,38 +59,15 @@ func NewCmdWebhook(ctx context.Context) *cobra.Command {
 
 			ctrl.SetLogger(klogr.New()) // nolint:staticcheck
 
-			cfg := ctrl.GetConfigOrDie()
-			cfg.QPS = QPS
-			cfg.Burst = Burst
-
-			// if the enable-http2 flag is false (the default), http/2 should be disabled
-			// due to its vulnerabilities. More specifically, disabling http/2 will
-			// prevent from being vulnerable to the HTTP/2 Stream Cancellation and
-			// Rapid Reset CVEs. For more information see:
-			// - https://github.com/advisories/GHSA-qppj-fm5r-hxr3
-			// - https://github.com/advisories/GHSA-4374-p667-p6c8
-			disableHTTP2 := func(c *tls.Config) {
-				setupLog.Info("disabling http/2")
-				c.NextProtos = []string{"http/1.1"}
-			}
-
-			tlsOpts := []func(*tls.Config){}
-			if !enableHTTP2 {
-				tlsOpts = append(tlsOpts, disableHTTP2)
-			}
-
-			webhookServer := webhook.NewServer(webhook.Options{
-				TLSOpts: tlsOpts,
-			})
-
 			mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-				Scheme: scheme,
+				Scheme: clientscheme.Scheme,
 				Metrics: metricsserver.Options{
-					BindAddress:   metricsAddr,
-					SecureServing: secureMetrics,
-					TLSOpts:       tlsOpts,
+					BindAddress: metricsAddr,
 				},
-				WebhookServer:          webhookServer,
+				WebhookServer: webhook.NewServer(webhook.Options{
+					Port:    9443,
+					CertDir: certDir,
+				}),
 				HealthProbeBindAddress: probeAddr,
 				LeaderElection:         enableLeaderElection,
 				LeaderElectionID:       "226502b5.webhook.appscode.com",
@@ -114,10 +88,10 @@ func NewCmdWebhook(ctx context.Context) *cobra.Command {
 				os.Exit(1)
 			}
 
-			//if err = (&appsv1.PetSet{}).SetupWebhookWithManager(mgr); err != nil {
-			//	setupLog.Error(err, "unable to create webhook", "webhook", "PetSet")
-			//	os.Exit(1)
-			//}
+			if err = (&opsapi.ClusterOpsRequest{}).SetupWebhookWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create webhook", "webhook", "ClusterOpsRequest")
+				os.Exit(1)
+			}
 
 			if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 				setupLog.Error(err, "unable to set up health check")
@@ -159,10 +133,6 @@ func NewCmdWebhook(ctx context.Context) *cobra.Command {
 	cmd.Flags().BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	cmd.Flags().BoolVar(&secureMetrics, "metrics-secure", false,
-		"If set the metrics endpoint is served securely")
-	cmd.Flags().BoolVar(&enableHTTP2, "enable-http2", false,
-		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 
 	return cmd
 }

@@ -26,9 +26,13 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	clientscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	_ "kmodules.xyz/client-go/meta"
+	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
+	capi "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiexp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -41,6 +45,9 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(catalogv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(opsv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(capi.AddToScheme(scheme))
+	utilruntime.Must(capiexp.AddToScheme(scheme))
+	utilruntime.Must(capz.AddToScheme(scheme))
 }
 
 func NewRootCmd() *cobra.Command {
@@ -48,6 +55,9 @@ func NewRootCmd() *cobra.Command {
 		Use:               "capi-ops-manager [command]",
 		Short:             `CAPI Ops Manager by AppsCode`,
 		DisableAutoGenTag: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return opsv1alpha1.AddToScheme(clientscheme.Scheme)
+		},
 	}
 
 	rootCmd.AddCommand(v.NewCmdVersion())
