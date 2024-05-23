@@ -65,7 +65,7 @@ func (r *ClusterOpsRequestReconciler) updateMachinePoolVersion(mp *capiexp.Machi
 }
 
 func (r *ClusterOpsRequestReconciler) patchMachinePoolVersion(mp *capiexp.MachinePool) (kutil.VerbType, error) {
-	if ptr.Deref(mp.Spec.Template.Spec.Version, "0") == ptr.Deref(r.ClusterOps.Spec.UpdateVersion.TargetVersion, "0") {
+	if isVersionEqual(ptr.Deref(mp.Spec.Template.Spec.Version, "0"), ptr.Deref(r.ClusterOps.Spec.UpdateVersion.TargetVersion, "0")) {
 		return kutil.VerbUnchanged, nil
 	}
 	r.Log.Info("Patching MachinePool Version", "Name", mp.GetName(), "Namespace", mp.GetNamespace())

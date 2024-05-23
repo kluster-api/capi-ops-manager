@@ -5,6 +5,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	clientutil "kmodules.xyz/client-go/client"
 	"kmodules.xyz/client-go/conditions"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
@@ -30,7 +31,7 @@ func (r *ClusterOpsRequestReconciler) updateAzureManagedControlPlane(namespacedN
 		return false, err
 	}
 
-	if !r.isAzureManagedControlPlaneReady(azureManagedCP) || azureManagedCP.Status.Version != *r.ClusterOps.Spec.UpdateVersion.TargetVersion {
+	if !r.isAzureManagedControlPlaneReady(azureManagedCP) || !isVersionEqual(azureManagedCP.Status.Version, ptr.Deref(r.ClusterOps.Spec.UpdateVersion.TargetVersion, "")) {
 		r.Log.Info("Waiting for AzureManagedControlPlane to be ready")
 		return true, nil
 	}

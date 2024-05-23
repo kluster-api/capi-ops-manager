@@ -51,3 +51,10 @@ func (r *ClusterOpsRequestReconciler) updateClusterOpsRequestStatus(namespacedNa
 	}
 	return nil
 }
+
+func isVersionEqual(v1 string, v2 string) bool {
+	if v1 == v2 || "v"+v1 == v2 || v1 == "v"+v2 {
+		return true
+	}
+	return false
+}
