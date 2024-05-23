@@ -25,6 +25,13 @@ func (r *ClusterOpsRequestReconciler) updateVersion(cluster *capi.Cluster) (bool
 			conditions.MarkFalse(r.ClusterOps, opsapi.ControlPlaneUpdateCondition, opsapi.ControlPlaneUpdateFailedReason, v1.ConditionSeverityError, err.Error())
 			return false, err
 		}
+	} else if cluster.Spec.ControlPlaneRef.Kind == "GCPManagedControlPlane" {
+		namespacedName := types.NamespacedName{Namespace: cluster.Spec.ControlPlaneRef.Namespace, Name: cluster.Spec.ControlPlaneRef.Name}
+		reKey, err = r.updateGCPManagedControlPlane(namespacedName)
+		if err != nil {
+			conditions.MarkFalse(r.ClusterOps, opsapi.ControlPlaneUpdateCondition, opsapi.ControlPlaneUpdateFailedReason, v1.ConditionSeverityError, err.Error())
+			return false, err
+		}
 	}
 	if reKey {
 		return true, nil
