@@ -30,6 +30,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	_ "kmodules.xyz/client-go/meta"
+	capa "sigs.k8s.io/cluster-api-provider-aws/v2/controlplane/eks/api/v1beta2"
 	capz "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	capg "sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
 	capi "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -48,6 +49,7 @@ func init() {
 	utilruntime.Must(opsv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(capi.AddToScheme(scheme))
 	utilruntime.Must(capiexp.AddToScheme(scheme))
+	utilruntime.Must(capa.AddToScheme(scheme))
 	utilruntime.Must(capz.AddToScheme(scheme))
 	utilruntime.Must(capg.AddToScheme(scheme))
 }
