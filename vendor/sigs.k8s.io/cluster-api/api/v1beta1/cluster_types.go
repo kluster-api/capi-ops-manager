@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -142,6 +143,10 @@ type ControlPlaneTopology struct {
 	// Defaults to 10 seconds.
 	// +optional
 	NodeDeletionTimeout *metav1.Duration `json:"nodeDeletionTimeout,omitempty"`
+
+	// Variables can be used to customize the ControlPlane through patches.
+	// +optional
+	Variables *ControlPlaneVariables `json:"variables,omitempty"`
 }
 
 // WorkersTopology represents the different sets of worker nodes in the cluster.
@@ -327,6 +332,13 @@ type ClusterVariable struct {
 	Value apiextensionsv1.JSON `json:"value"`
 }
 
+// ControlPlaneVariables can be used to provide variables for the ControlPlane.
+type ControlPlaneVariables struct {
+	// Overrides can be used to override Cluster level variables.
+	// +optional
+	Overrides []ClusterVariable `json:"overrides,omitempty"`
+}
+
 // MachineDeploymentVariables can be used to provide variables for a specific MachineDeployment.
 type MachineDeploymentVariables struct {
 	// Overrides can be used to override Cluster level variables.
@@ -412,7 +424,11 @@ type ClusterStatus struct {
 	// +optional
 	InfrastructureReady bool `json:"infrastructureReady"`
 
-	// ControlPlaneReady defines if the control plane is ready.
+	// ControlPlaneReady denotes if the control plane became ready during initial provisioning
+	// to receive requests.
+	// NOTE: this field is part of the Cluster API contract and it is used to orchestrate provisioning.
+	// The value of this field is never updated after provisioning is completed. Please use conditions
+	// to check the operational state of the control plane.
 	// +optional
 	ControlPlaneReady bool `json:"controlPlaneReady"`
 
@@ -494,6 +510,14 @@ type Cluster struct {
 	Status ClusterStatus `json:"status,omitempty"`
 }
 
+// GetClassKey returns the namespaced name for the class associated with this object.
+func (c *Cluster) GetClassKey() types.NamespacedName {
+	if c.Spec.Topology == nil {
+		return types.NamespacedName{}
+	}
+	return types.NamespacedName{Namespace: c.GetNamespace(), Name: c.Spec.Topology.Class}
+}
+
 // GetConditions returns the set of conditions for this object.
 func (c *Cluster) GetConditions() Conditions {
 	return c.Status.Conditions
@@ -505,8 +529,9 @@ func (c *Cluster) SetConditions(conditions Conditions) {
 }
 
 // GetIPFamily returns a ClusterIPFamily from the configuration provided.
-// Note: IPFamily is not a concept in Kubernetes. It was originally introduced in CAPI for CAPD.
-// IPFamily may be dropped in a future release. More details at https://github.com/kubernetes-sigs/cluster-api/issues/7521
+//
+// Deprecated: IPFamily is not a concept in Kubernetes. It was originally introduced in CAPI for CAPD.
+// IPFamily will be dropped in a future release. More details at https://github.com/kubernetes-sigs/cluster-api/issues/7521
 func (c *Cluster) GetIPFamily() (ClusterIPFamily, error) {
 	var podCIDRs, serviceCIDRs []string
 	if c.Spec.ClusterNetwork != nil {

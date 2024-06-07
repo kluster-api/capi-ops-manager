@@ -37,7 +37,19 @@ type ClusterOpsRequestType string
 const ClusterOpsRequestTypeUpdateVersion ClusterOpsRequestType = "UpdateVersion"
 
 type ClusterUpdateVersionSpec struct {
-	TargetVersion *string `json:"targetVersion,omitempty"`
+	TargetVersion TargetVersion `json:"targetVersion,omitempty"`
+}
+
+type TargetVersion struct {
+	Cluster   *string           `json:"cluster,omitempty"`
+	Providers *ProviderVersions `json:"providers,omitempty"`
+}
+
+type ProviderVersions struct {
+	Core           string `json:"core,omitempty"`
+	Bootstrap      string `json:"bootstrap,omitempty"`
+	ControlPlane   string `json:"controlPlane,omitempty"`
+	Infrastructure string `json:"infrastructure,omitempty"`
 }
 
 // ClusterOpsRequestStatus defines the observed state of ClusterOpsRequest

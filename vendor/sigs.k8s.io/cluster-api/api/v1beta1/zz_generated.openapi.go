@@ -49,6 +49,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"sigs.k8s.io/cluster-api/api/v1beta1.ControlPlaneClass":                        schema_sigsk8sio_cluster_api_api_v1beta1_ControlPlaneClass(ref),
 		"sigs.k8s.io/cluster-api/api/v1beta1.ControlPlaneClassNamingStrategy":          schema_sigsk8sio_cluster_api_api_v1beta1_ControlPlaneClassNamingStrategy(ref),
 		"sigs.k8s.io/cluster-api/api/v1beta1.ControlPlaneTopology":                     schema_sigsk8sio_cluster_api_api_v1beta1_ControlPlaneTopology(ref),
+		"sigs.k8s.io/cluster-api/api/v1beta1.ControlPlaneVariables":                    schema_sigsk8sio_cluster_api_api_v1beta1_ControlPlaneVariables(ref),
 		"sigs.k8s.io/cluster-api/api/v1beta1.ExternalPatchDefinition":                  schema_sigsk8sio_cluster_api_api_v1beta1_ExternalPatchDefinition(ref),
 		"sigs.k8s.io/cluster-api/api/v1beta1.FailureDomainSpec":                        schema_sigsk8sio_cluster_api_api_v1beta1_FailureDomainSpec(ref),
 		"sigs.k8s.io/cluster-api/api/v1beta1.JSONPatch":                                schema_sigsk8sio_cluster_api_api_v1beta1_JSONPatch(ref),
@@ -854,7 +855,7 @@ func schema_sigsk8sio_cluster_api_api_v1beta1_ClusterStatus(ref common.Reference
 					},
 					"controlPlaneReady": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ControlPlaneReady defines if the control plane is ready.",
+							Description: "ControlPlaneReady denotes if the control plane became ready during initial provisioning to receive requests. NOTE: this field is part of the Cluster API contract and it is used to orchestrate provisioning. The value of this field is never updated after provisioning is completed. Please use conditions to check the operational state of the control plane.",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
@@ -1115,11 +1116,46 @@ func schema_sigsk8sio_cluster_api_api_v1beta1_ControlPlaneTopology(ref common.Re
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
+					"variables": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Variables can be used to customize the ControlPlane through patches.",
+							Ref:         ref("sigs.k8s.io/cluster-api/api/v1beta1.ControlPlaneVariables"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "sigs.k8s.io/cluster-api/api/v1beta1.MachineHealthCheckTopology", "sigs.k8s.io/cluster-api/api/v1beta1.ObjectMeta"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "sigs.k8s.io/cluster-api/api/v1beta1.ControlPlaneVariables", "sigs.k8s.io/cluster-api/api/v1beta1.MachineHealthCheckTopology", "sigs.k8s.io/cluster-api/api/v1beta1.ObjectMeta"},
+	}
+}
+
+func schema_sigsk8sio_cluster_api_api_v1beta1_ControlPlaneVariables(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ControlPlaneVariables can be used to provide variables for the ControlPlane.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"overrides": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Overrides can be used to override Cluster level variables.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("sigs.k8s.io/cluster-api/api/v1beta1.ClusterVariable"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"sigs.k8s.io/cluster-api/api/v1beta1.ClusterVariable"},
 	}
 }
 
@@ -2208,7 +2244,7 @@ func schema_sigsk8sio_cluster_api_api_v1beta1_MachineHealthCheckClass(ref common
 					},
 					"nodeStartupTimeout": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Machines older than this duration without a node will be considered to have failed and will be remediated. If you wish to disable this feature, set the value explicitly to 0.",
+							Description: "NodeStartupTimeout allows to set the maximum time for MachineHealthCheck to consider a Machine unhealthy if a corresponding Node isn't associated through a `Spec.ProviderID` field.\n\nThe duration set in this field is compared to the greatest of: - Cluster's infrastructure and control plane ready condition timestamp (if and when available) - Machine's infrastructure ready condition timestamp (if and when available) - Machine's metadata creation timestamp\n\nDefaults to 10 minutes. If you wish to disable this feature, set the value explicitly to 0.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
@@ -2326,7 +2362,7 @@ func schema_sigsk8sio_cluster_api_api_v1beta1_MachineHealthCheckSpec(ref common.
 					},
 					"nodeStartupTimeout": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Machines older than this duration without a node will be considered to have failed and will be remediated. If not set, this value is defaulted to 10 minutes. If you wish to disable this feature, set the value explicitly to 0.",
+							Description: "NodeStartupTimeout allows to set the maximum time for MachineHealthCheck to consider a Machine unhealthy if a corresponding Node isn't associated through a `Spec.ProviderID` field.\n\nThe duration set in this field is compared to the greatest of: - Cluster's infrastructure and control plane ready condition timestamp (if and when available) - Machine's infrastructure ready condition timestamp (if and when available) - Machine's metadata creation timestamp\n\nDefaults to 10 minutes. If you wish to disable this feature, set the value explicitly to 0.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
@@ -2337,7 +2373,7 @@ func schema_sigsk8sio_cluster_api_api_v1beta1_MachineHealthCheckSpec(ref common.
 						},
 					},
 				},
-				Required: []string{"clusterName", "selector", "unhealthyConditions"},
+				Required: []string{"clusterName", "selector"},
 			},
 		},
 		Dependencies: []string{
@@ -2463,7 +2499,7 @@ func schema_sigsk8sio_cluster_api_api_v1beta1_MachineHealthCheckTopology(ref com
 					},
 					"nodeStartupTimeout": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Machines older than this duration without a node will be considered to have failed and will be remediated. If you wish to disable this feature, set the value explicitly to 0.",
+							Description: "NodeStartupTimeout allows to set the maximum time for MachineHealthCheck to consider a Machine unhealthy if a corresponding Node isn't associated through a `Spec.ProviderID` field.\n\nThe duration set in this field is compared to the greatest of: - Cluster's infrastructure and control plane ready condition timestamp (if and when available) - Machine's infrastructure ready condition timestamp (if and when available) - Machine's metadata creation timestamp\n\nDefaults to 10 minutes. If you wish to disable this feature, set the value explicitly to 0.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
