@@ -39,7 +39,7 @@ func (r *ClusterOpsRequestReconciler) updateAWSManagedControlPlane(namespacedNam
 	}
 	_, err = clientutil.CreateOrPatch(r.ctx, r.KBClient, awsManagedCP, func(obj client.Object, createOp bool) client.Object {
 		in := obj.(*capa.AWSManagedControlPlane)
-		in.Spec.Version = r.ClusterOps.Spec.UpdateVersion.TargetVersion
+		in.Spec.Version = r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster
 		return in
 	})
 	if err != nil {

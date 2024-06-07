@@ -40,14 +40,14 @@ func (r *ClusterOpsRequestReconciler) updateAzureManagedControlPlane(namespacedN
 	}
 	_, err = clientutil.CreateOrPatch(r.ctx, r.KBClient, azureManagedCP, func(obj client.Object, createOp bool) client.Object {
 		in := obj.(*capz.AzureManagedControlPlane)
-		in.Spec.Version = *r.ClusterOps.Spec.UpdateVersion.TargetVersion
+		in.Spec.Version = *r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster
 		return in
 	})
 	if err != nil {
 		return false, err
 	}
 
-	if !r.isAzureManagedControlPlaneReady(azureManagedCP) || !isVersionEqual(azureManagedCP.Status.Version, ptr.Deref(r.ClusterOps.Spec.UpdateVersion.TargetVersion, "")) {
+	if !r.isAzureManagedControlPlaneReady(azureManagedCP) || !isVersionEqual(azureManagedCP.Status.Version, ptr.Deref(r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster, "")) {
 		r.Log.Info("Waiting for AzureManagedControlPlane to be ready")
 		return true, nil
 	}

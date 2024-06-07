@@ -61,7 +61,21 @@ spec:
               updateVersion:
                 properties:
                   targetVersion:
-                    type: string
+                    properties:
+                      cluster:
+                        type: string
+                      providers:
+                        properties:
+                          bootstrap:
+                            type: string
+                          controlPlane:
+                            type: string
+                          core:
+                            type: string
+                          infrastructure:
+                            type: string
+                        type: object
+                    type: object
                 type: object
             required:
             - clusterRef

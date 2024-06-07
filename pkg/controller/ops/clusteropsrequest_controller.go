@@ -90,7 +90,7 @@ func (r *ClusterOpsRequestReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 	var reKey bool
 	if r.ClusterOps.GetRequestType().(opsapi.ClusterOpsRequestType) == opsapi.ClusterOpsRequestTypeUpdateVersion {
-		reKey, err = r.updateVersion(cluster)
+		reKey, err = r.updateClusterVersion(cluster)
 		if err != nil {
 			return r.requeueWithError("failed to update version", err)
 		}

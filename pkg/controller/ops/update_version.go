@@ -29,14 +29,31 @@ import (
 	capi "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-func (r *ClusterOpsRequestReconciler) updateVersion(cluster *capi.Cluster) (bool, error) {
+func (r *ClusterOpsRequestReconciler) updateClusterVersion(cluster *capi.Cluster) (bool, error) {
+	var reKey bool
 	var err error
+	reKey, err = r.updateControlPlaneVersion(cluster)
+	if err != nil || reKey {
+		return reKey, err
+	}
+	reKey, err = r.updateClusterMachinePoolVersion(cluster.Name)
+	if err != nil || reKey {
+		return reKey, err
+	}
+	return false, r.updateComponents()
+}
+
+func (r *ClusterOpsRequestReconciler) updateControlPlaneVersion(cluster *capi.Cluster) (bool, error) {
 	if !conditions.HasCondition(r.ClusterOps.Status.Conditions, string(opsapi.ControlPlaneUpdateCondition)) {
 		r.Log.Info("Started updating control plane version")
 		conditions.MarkFalse(r.ClusterOps, opsapi.ControlPlaneUpdateCondition, opsapi.ControlPlaneUpdateStartedReason, v1.ConditionSeverityInfo, "")
 		return false, nil
 	}
+	if conditions.IsConditionTrue(r.ClusterOps.Status.Conditions, string(opsapi.ControlPlaneUpdateCondition)) {
+		return false, nil
+	}
 	var reKey bool
+	var err error
 	namespacedName := types.NamespacedName{Namespace: cluster.Spec.ControlPlaneRef.Namespace, Name: cluster.Spec.ControlPlaneRef.Name}
 	if cluster.Spec.ControlPlaneRef.Kind == capz.AzureManagedControlPlaneKind {
 		reKey, err = r.updateAzureManagedControlPlane(namespacedName)
@@ -55,10 +72,5 @@ func (r *ClusterOpsRequestReconciler) updateVersion(cluster *capi.Cluster) (bool
 		return true, nil
 	}
 	conditions.MarkTrue(r.ClusterOps, opsapi.ControlPlaneUpdateCondition)
-
-	reKey, err = r.updateClusterMachinePoolVersion(cluster.Name)
-	if err != nil {
-		return false, err
-	}
-	return reKey, nil
+	return false, nil
 }

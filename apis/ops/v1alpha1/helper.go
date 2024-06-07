@@ -51,8 +51,15 @@ const (
 	MachinePoolUpdateFailedReason  string              = "MachinePoolUpdateFailed"
 )
 
+const (
+	CapiProvidersUpdateCondition     kmapi.ConditionType = "CapiProvidersUpdate"
+	CapiProvidersUpdateStartedReason string              = "CapiProvidersUpdateStarted"
+	CapiProvidersUpdateFailedReason  string              = "CapiProvidersUpdateFailed"
+)
+
 func ConditionsOrder() []kmapi.ConditionType {
 	return []kmapi.ConditionType{
+		CapiProvidersUpdateCondition,
 		MachinePoolUpdateCondition,
 		ControlPlaneUpdateCondition,
 	}

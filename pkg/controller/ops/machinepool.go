@@ -38,6 +38,9 @@ func (r *ClusterOpsRequestReconciler) updateClusterMachinePoolVersion(clusterNam
 		conditions.MarkFalse(r.ClusterOps, opsapi.MachinePoolUpdateCondition, opsapi.MachinePoolUpdateStartedReason, kmapi.ConditionSeverityInfo, "")
 		return false, nil
 	}
+	if conditions.IsConditionTrue(r.ClusterOps.Status.Conditions, string(opsapi.MachinePoolUpdateCondition)) {
+		return false, nil
+	}
 	machinePools := &capiexp.MachinePoolList{}
 
 	err := r.KBClient.List(r.ctx, machinePools, client.MatchingLabels{
@@ -81,13 +84,13 @@ func (r *ClusterOpsRequestReconciler) updateMachinePoolVersion(mp *capiexp.Machi
 }
 
 func (r *ClusterOpsRequestReconciler) patchMachinePoolVersion(mp *capiexp.MachinePool) (kutil.VerbType, error) {
-	if isVersionEqual(ptr.Deref(mp.Spec.Template.Spec.Version, "0"), ptr.Deref(r.ClusterOps.Spec.UpdateVersion.TargetVersion, "0")) {
+	if isVersionEqual(ptr.Deref(mp.Spec.Template.Spec.Version, "0"), ptr.Deref(r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster, "0")) {
 		return kutil.VerbUnchanged, nil
 	}
 	r.Log.Info("Patching MachinePool Version", "Name", mp.GetName(), "Namespace", mp.GetNamespace())
 	return clientutil.CreateOrPatch(r.ctx, r.KBClient, mp, func(obj client.Object, createOp bool) client.Object {
 		in := obj.(*capiexp.MachinePool)
-		in.Spec.Template.Spec.Version = r.ClusterOps.Spec.UpdateVersion.TargetVersion
+		in.Spec.Template.Spec.Version = r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster
 		return in
 	})
 }
