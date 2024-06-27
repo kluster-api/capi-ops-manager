@@ -42,13 +42,20 @@ spec:
                     type: string
                   clusterctl:
                     type: string
+                  dockerMachine:
+                    properties:
+                      os:
+                        type: string
+                      type:
+                        type: string
+                    type: object
                   iamAuthenticator:
                     type: string
                   infrastructure:
                     type: string
                   kind:
                     type: string
-                  kind_image:
+                  kindImage:
                     type: string
                 required:
                 - capi
@@ -57,7 +64,7 @@ spec:
                 - iamAuthenticator
                 - infrastructure
                 - kind
-                - kind_image
+                - kindImage
                 type: object
               capg:
                 properties:
@@ -65,18 +72,25 @@ spec:
                     type: string
                   clusterctl:
                     type: string
+                  dockerMachine:
+                    properties:
+                      os:
+                        type: string
+                      type:
+                        type: string
+                    type: object
                   infrastructure:
                     type: string
                   kind:
                     type: string
-                  kind_image:
+                  kindImage:
                     type: string
                 required:
                 - capi
                 - clusterctl
                 - infrastructure
                 - kind
-                - kind_image
+                - kindImage
                 type: object
               capz:
                 properties:
@@ -84,18 +98,25 @@ spec:
                     type: string
                   clusterctl:
                     type: string
+                  dockerMachine:
+                    properties:
+                      os:
+                        type: string
+                      type:
+                        type: string
+                    type: object
                   infrastructure:
                     type: string
                   kind:
                     type: string
-                  kind_image:
+                  kindImage:
                     type: string
                 required:
                 - capi
                 - clusterctl
                 - infrastructure
                 - kind
-                - kind_image
+                - kindImage
                 type: object
             required:
             - capa
