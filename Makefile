@@ -385,7 +385,7 @@ e2e-tests: $(BUILD_DIRS)
 e2e-parallel:
 	@$(MAKE) e2e-tests GINKGO_ARGS="-p -stream --flakeAttempts=2" --no-print-directory
 
-ADDTL_LINTERS   := gofmt,goimports,unparam
+ADDTL_LINTERS   := goconst,gofmt,goimports,unparam
 
 .PHONY: lint
 lint: $(BUILD_DIRS)
@@ -408,7 +408,7 @@ lint: $(BUILD_DIRS)
 $(BUILD_DIRS):
 	@mkdir -p $@
 
-KUBE_NAMESPACE    ?= monitoring
+KUBE_NAMESPACE    ?= kubeops
 REGISTRY_SECRET   ?=
 IMAGE_PULL_POLICY	?= IfNotPresent
 
@@ -423,7 +423,7 @@ install:
 	@cd ../installer; \
 	kubectl create ns $(KUBE_NAMESPACE) || true; \
   kubectl label ns $(KUBE_NAMESPACE) pod-security.kubernetes.io/enforce=restricted; \
-	helm upgrade -i capi-ops-manager charts/capi-ops-manager --wait --debug --force \
+	helm upgrade -i capi-ops-manager charts/capi-ops-manager --wait \
 		--namespace=$(KUBE_NAMESPACE) --create-namespace \
 		--set registryFQDN="" \
 		--set operator.registry=$(REGISTRY) \
