@@ -27,12 +27,19 @@ type CapiVersionSpec struct {
 	CAPZ GenericVersionMatrix `json:"capz"`
 }
 
+type DockerMachine struct {
+	MachineType string `json:"type,omitempty"`
+	//+optional
+	MachineOS string `json:"os,omitempty"`
+}
+
 type GenericVersionMatrix struct {
-	Kind           string `json:"kind"`
-	KindImage      string `json:"kind_image"`
-	Clusterctl     string `json:"clusterctl"`
-	Capi           string `json:"capi"`
-	Infrastructure string `json:"infrastructure"`
+	Kind           string        `json:"kind"`
+	KindImage      string        `json:"kindImage"`
+	Clusterctl     string        `json:"clusterctl"`
+	Capi           string        `json:"capi"`
+	Infrastructure string        `json:"infrastructure"`
+	DockerMachine  DockerMachine `json:"dockerMachine,omitempty"`
 }
 
 type CAPAVersionMatrix struct {
