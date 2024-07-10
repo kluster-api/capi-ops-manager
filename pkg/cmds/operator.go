@@ -111,8 +111,8 @@ func NewCmdOperator(ctx context.Context) *cobra.Command {
 			}
 
 			if err = (&opscontroller.ClusterOpsRequestReconciler{
-				Client: mgr.GetClient(),
-				Scheme: mgr.GetScheme(),
+				KBClient: mgr.GetClient(),
+				Scheme:   mgr.GetScheme(),
 			}).SetupWithManager(mgr); err != nil {
 				setupLog.Error(err, "unable to create controller", "controller", "ClusterOpsRequest")
 				os.Exit(1)

@@ -18,35 +18,66 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kmapi "kmodules.xyz/client-go/api/v1"
 )
-
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // ClusterOpsRequestSpec defines the desired state of ClusterOpsRequest
 type ClusterOpsRequestSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	ClusterRef kmapi.ObjectReference `json:"clusterRef"`
+	Type       ClusterOpsRequestType `json:"type"`
+	// +optional
+	UpdateVersion *ClusterUpdateVersionSpec `json:"updateVersion,omitempty"`
+}
 
-	// Foo is an example field of ClusterOpsRequest. Edit clusteropsrequest_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+type ClusterOpsRequestType string
+
+// ClusterOpsRequestTypeUpdateVersion is a ClusterOpsRequestType of type UpdateVersion.
+// +kubebuilder:validation:Enum=UpdateVersion
+const ClusterOpsRequestTypeUpdateVersion ClusterOpsRequestType = "UpdateVersion"
+
+type ClusterUpdateVersionSpec struct {
+	TargetVersion TargetVersion `json:"targetVersion,omitempty"`
+}
+
+type TargetVersion struct {
+	Cluster   *string           `json:"cluster,omitempty"`
+	Providers *ProviderVersions `json:"providers,omitempty"`
+}
+
+type ProviderVersions struct {
+	Core           string `json:"core,omitempty"`
+	Bootstrap      string `json:"bootstrap,omitempty"`
+	ControlPlane   string `json:"controlPlane,omitempty"`
+	Infrastructure string `json:"infrastructure,omitempty"`
 }
 
 // ClusterOpsRequestStatus defines the observed state of ClusterOpsRequest
 type ClusterOpsRequestStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=8
+	Conditions []kmapi.Condition `json:"conditions"`
+	// +optional
+	Phase ClusterOpsRequestPhase `json:"phase"`
 }
+
+// ClusterOpsRequest is the Schema for the clusteropsrequests API
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// ClusterOpsRequest is the Schema for the clusteropsrequests API
+// +kubebuilder:printcolumn:name="Type",type="string",JSONPath=".spec.type"
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type ClusterOpsRequest struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ClusterOpsRequestSpec   `json:"spec,omitempty"`
+	// +optional
+	Spec ClusterOpsRequestSpec `json:"spec,omitempty"`
+	// +optional
 	Status ClusterOpsRequestStatus `json:"status,omitempty"`
 }
 
