@@ -29,6 +29,8 @@ import (
 	capi "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
+const GCPManagedControlPlaneKind = "GCPManagedControlPlane"
+
 func (r *ClusterOpsRequestReconciler) updateClusterVersion(cluster *capi.Cluster) (bool, error) {
 	var reKey bool
 	var err error
@@ -57,7 +59,7 @@ func (r *ClusterOpsRequestReconciler) updateControlPlaneVersion(cluster *capi.Cl
 	namespacedName := types.NamespacedName{Namespace: cluster.Spec.ControlPlaneRef.Namespace, Name: cluster.Spec.ControlPlaneRef.Name}
 	if cluster.Spec.ControlPlaneRef.Kind == capz.AzureManagedControlPlaneKind {
 		reKey, err = r.updateAzureManagedControlPlane(namespacedName)
-	} else if cluster.Spec.ControlPlaneRef.Kind == "GCPManagedControlPlane" {
+	} else if cluster.Spec.ControlPlaneRef.Kind == GCPManagedControlPlaneKind {
 		reKey, err = r.updateGCPManagedControlPlane(namespacedName)
 	} else if cluster.Spec.ControlPlaneRef.Kind == capa.AWSManagedControlPlaneKind {
 		reKey, err = r.updateAWSManagedControlPlane(namespacedName)

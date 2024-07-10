@@ -27,12 +27,11 @@ type ClusterOpsRequestSpec struct {
 	Type       ClusterOpsRequestType `json:"type"`
 	// +optional
 	UpdateVersion *ClusterUpdateVersionSpec `json:"updateVersion,omitempty"`
-	// ApplyOption is to control the execution of OpsRequest depending on the database state.
 }
 
 type ClusterOpsRequestType string
 
-// RedisOpsRequestTypeUpdateVersion is a RedisOpsRequestType of type UpdateVersion.
+// ClusterOpsRequestTypeUpdateVersion is a ClusterOpsRequestType of type UpdateVersion.
 // +kubebuilder:validation:Enum=UpdateVersion
 const ClusterOpsRequestTypeUpdateVersion ClusterOpsRequestType = "UpdateVersion"
 
