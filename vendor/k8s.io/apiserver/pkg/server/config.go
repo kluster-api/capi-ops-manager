@@ -72,6 +72,7 @@ import (
 	flowcontrolrequest "k8s.io/apiserver/pkg/util/flowcontrol/request"
 	"k8s.io/client-go/informers"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/component-base/logs"
 	"k8s.io/component-base/metrics/features"
 	"k8s.io/component-base/metrics/prometheus/slis"
 	"k8s.io/component-base/tracing"
@@ -326,9 +327,6 @@ type SecureServingInfo struct {
 	// Cert is the main server cert which is used if SNI does not match. Cert must be non-nil and is
 	// allowed to be in SNICerts.
 	Cert dynamiccertificates.CertKeyContentProvider
-
-	// CertFile is the file containing the main server cert.
-	CertFile string
 
 	// SNICerts are the TLS certificates used for SNI.
 	SNICerts []dynamiccertificates.SNICertKeyContentProvider
@@ -670,6 +668,11 @@ func (c *Config) DrainedNotify() <-chan struct{} {
 	return c.lifecycleSignals.InFlightRequestsDrained.Signaled()
 }
 
+// ShutdownInitiated returns a lifecycle signal of apiserver shutdown having been initiated.
+func (c *Config) ShutdownInitiatedNotify() <-chan struct{} {
+	return c.lifecycleSignals.ShutdownInitiated.Signaled()
+}
+
 // Complete fills in any fields not set that are required to have valid data and can be derived
 // from other fields. If you're going to `ApplyOptions`, do that first. It's mutating the receiver.
 func (c *Config) Complete(informers informers.SharedInformerFactory) CompletedConfig {
@@ -715,14 +718,6 @@ func (c *Config) Complete(informers informers.SharedInformerFactory) CompletedCo
 				return ""
 			})
 		}
-	}
-
-	if c.SecureServing != nil && c.SecureServing.CertFile != "" {
-		certChecker, err := healthz.NewCertHealthz(c.SecureServing.CertFile)
-		if err != nil {
-			klog.Fatalf("failed to create certificate checker. Reason: %v", err)
-		}
-		c.HealthzChecks = append(c.HealthzChecks, certChecker)
 	}
 
 	return CompletedConfig{&completedConfig{c, informers}}
@@ -809,15 +804,14 @@ func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*G
 		preShutdownHooks:       map[string]preShutdownHookEntry{},
 		disabledPostStartHooks: c.DisabledPostStartHooks,
 
-		healthzChecks:    c.HealthzChecks,
-		livezChecks:      c.LivezChecks,
-		readyzChecks:     c.ReadyzChecks,
+		healthzRegistry:  healthCheckRegistry{path: "/healthz", checks: c.HealthzChecks},
+		livezRegistry:    healthCheckRegistry{path: "/livez", checks: c.LivezChecks, clock: clock.RealClock{}},
+		readyzRegistry:   healthCheckRegistry{path: "/readyz", checks: c.ReadyzChecks},
 		livezGracePeriod: c.LivezGracePeriod,
 
 		DiscoveryGroupManager: discovery.NewRootAPIsHandler(c.DiscoveryAddresses, c.Serializer),
 
 		maxRequestBodyBytes: c.MaxRequestBodyBytes,
-		livezClock:          clock.RealClock{},
 
 		lifecycleSignals:       c.lifecycleSignals,
 		ShutdownSendRetryAfter: c.ShutdownSendRetryAfter,
@@ -1022,6 +1016,10 @@ func DefaultBuildHandlerChain(apiHandler http.Handler, c *Config) http.Handler {
 
 	handler = genericfilters.WithCORS(handler, c.CorsAllowedOriginList, nil, nil, nil, "true")
 
+	// WithWarningRecorder must be wrapped by the timeout handler
+	// to make the addition of warning headers threadsafe
+	handler = genericapifilters.WithWarningRecorder(handler)
+
 	// WithTimeoutForNonLongRunningRequests will call the rest of the request handling in a go-routine with the
 	// context with deadline. The go-routine can keep running, while the timeout logic will return a timeout to the client.
 	handler = genericfilters.WithTimeoutForNonLongRunningRequests(handler, c.LongRunningFunc)
@@ -1035,7 +1033,6 @@ func DefaultBuildHandlerChain(apiHandler http.Handler, c *Config) http.Handler {
 	if c.SecureServing != nil && !c.SecureServing.DisableHTTP2 && c.GoawayChance > 0 {
 		handler = genericfilters.WithProbabilisticGoaway(handler, c.GoawayChance)
 	}
-	handler = genericapifilters.WithWarningRecorder(handler)
 	handler = genericapifilters.WithCacheControl(handler)
 	handler = genericfilters.WithHSTS(handler, c.HSTSDirectives)
 	if c.ShutdownSendRetryAfter {
@@ -1046,6 +1043,12 @@ func DefaultBuildHandlerChain(apiHandler http.Handler, c *Config) http.Handler {
 		handler = genericapifilters.WithTracing(handler, c.TracerProvider)
 	}
 	handler = genericapifilters.WithLatencyTrackers(handler)
+	// WithRoutine will execute future handlers in a separate goroutine and serving
+	// handler in current goroutine to minimize the stack memory usage. It must be
+	// after WithPanicRecover() to be protected from panics.
+	if utilfeature.DefaultFeatureGate.Enabled(genericfeatures.APIServingWithRoutine) {
+		handler = genericfilters.WithRoutine(handler, c.LongRunningFunc)
+	}
 	handler = genericapifilters.WithRequestInfo(handler, c.RequestInfoResolver)
 	handler = genericapifilters.WithRequestReceivedTimestamp(handler)
 	handler = genericapifilters.WithMuxAndDiscoveryComplete(handler, c.lifecycleSignals.MuxAndDiscoveryComplete.Signaled())
@@ -1064,11 +1067,11 @@ func installAPI(s *GenericAPIServer, c *Config) {
 			goruntime.SetBlockProfileRate(1)
 		}
 		// so far, only logging related endpoints are considered valid to add for these debug flags.
-		routes.DebugFlags{}.Install(s.Handler.NonGoRestfulMux, "v", routes.StringFlagPutHandler(glogSetter))
+		routes.DebugFlags{}.Install(s.Handler.NonGoRestfulMux, "v", routes.StringFlagPutHandler(logs.GlogSetter))
 	}
 	if s.UnprotectedDebugSocket != nil {
 		s.UnprotectedDebugSocket.InstallProfiling()
-		s.UnprotectedDebugSocket.InstallDebugFlag("v", routes.StringFlagPutHandler(glogSetter))
+		s.UnprotectedDebugSocket.InstallDebugFlag("v", routes.StringFlagPutHandler(logs.GlogSetter))
 		if c.EnableContentionProfiling {
 			goruntime.SetBlockProfileRate(1)
 		}
@@ -1166,13 +1169,4 @@ func SetHostnameFuncForTests(name string) {
 		err = nil
 		return
 	}
-}
-
-// glogSetter is a setter to set glog level.
-func glogSetter(val string) (string, error) {
-	var level klog.Level
-	if err := level.Set(val); err != nil {
-		return "", fmt.Errorf("failed set klog.logging.verbosity %s: %v", val, err)
-	}
-	return fmt.Sprintf("successfully set klog.logging.verbosity to %s", val), nil
 }
