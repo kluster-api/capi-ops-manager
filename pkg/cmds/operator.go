@@ -31,7 +31,6 @@ import (
 	"k8s.io/klog/v2/klogr"
 	"kmodules.xyz/client-go/meta"
 	_ "kmodules.xyz/client-go/meta"
-	"kmodules.xyz/client-go/tools/clusterid"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -137,7 +136,6 @@ func NewCmdOperator(ctx context.Context) *cobra.Command {
 	}
 
 	meta.AddLabelBlacklistFlag(cmd.Flags())
-	clusterid.AddFlags(cmd.Flags())
 	cmd.Flags().Float32Var(&QPS, "qps", QPS, "The maximum QPS to the master from this client")
 	cmd.Flags().IntVar(&Burst, "burst", Burst, "The maximum burst for throttle")
 	cmd.Flags().StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")

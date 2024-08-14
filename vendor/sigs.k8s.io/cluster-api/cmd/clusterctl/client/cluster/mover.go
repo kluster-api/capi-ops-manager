@@ -946,12 +946,10 @@ func (o *objectMover) createTargetObject(ctx context.Context, nodeToCreate *node
 	obj := &unstructured.Unstructured{}
 	obj.SetAPIVersion(nodeToCreate.identity.APIVersion)
 	obj.SetKind(nodeToCreate.identity.Kind)
-	objKey := client.ObjectKey{
-		Namespace: nodeToCreate.identity.Namespace,
-		Name:      nodeToCreate.identity.Name,
-	}
+	obj.SetName(nodeToCreate.identity.Name)
+	obj.SetNamespace(nodeToCreate.identity.Namespace)
 
-	if err := cFrom.Get(ctx, objKey, obj); err != nil {
+	if err := cFrom.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
 		return errors.Wrapf(err, "error reading %q %s/%s",
 			obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
 	}
@@ -1006,7 +1004,7 @@ func (o *objectMover) createTargetObject(ctx context.Context, nodeToCreate *node
 			existingTargetObj := &unstructured.Unstructured{}
 			existingTargetObj.SetAPIVersion(obj.GetAPIVersion())
 			existingTargetObj.SetKind(obj.GetKind())
-			if err := cTo.Get(ctx, objKey, existingTargetObj); err != nil {
+			if err := cTo.Get(ctx, client.ObjectKeyFromObject(obj), existingTargetObj); err != nil {
 				return errors.Wrapf(err, "error reading resource for %q %s/%s",
 					existingTargetObj.GroupVersionKind(), existingTargetObj.GetNamespace(), existingTargetObj.GetName())
 			}
@@ -1329,7 +1327,13 @@ func applyMutators(object client.Object, mutators ...ResourceMutatorFunc) (*unst
 	}
 	u.SetUnstructuredContent(to)
 	for _, mutator := range mutators {
-		if err := mutator(u); err != nil {
+		var err error
+		if mutator != nil {
+			err = mutator(u)
+		} else {
+			err = errors.New("mutator is nil")
+		}
+		if err != nil {
 			return nil, errors.Wrapf(err, "error applying resource mutator to %q %s/%s",
 				u.GroupVersionKind(), object.GetNamespace(), object.GetName())
 		}
