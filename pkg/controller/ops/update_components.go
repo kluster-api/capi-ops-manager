@@ -46,7 +46,7 @@ func (r *ClusterOpsRequestReconciler) updateComponents() error {
 	client, err := clusterctl.New(r.ctx, "")
 	if err != nil {
 		r.Log.Info("Failed to get clusterctl client")
-		conditions.MarkFalse(r.ClusterOps, opsapi.CapiProvidersUpdateCondition, opsapi.CapiProvidersUpdateFailedReason, kmapi.ConditionSeverityInfo, err.Error())
+		conditions.MarkFalse(r.ClusterOps, opsapi.CapiProvidersUpdateCondition, opsapi.CapiProvidersUpdateFailedReason, kmapi.ConditionSeverityInfo, "%s", err.Error())
 		return err
 	}
 
@@ -58,7 +58,7 @@ func (r *ClusterOpsRequestReconciler) updateComponents() error {
 	})
 	if err != nil {
 		r.Log.Info("Failed to updated Capi provider versions")
-		conditions.MarkFalse(r.ClusterOps, opsapi.CapiProvidersUpdateCondition, opsapi.CapiProvidersUpdateFailedReason, kmapi.ConditionSeverityInfo, err.Error())
+		conditions.MarkFalse(r.ClusterOps, opsapi.CapiProvidersUpdateCondition, opsapi.CapiProvidersUpdateFailedReason, kmapi.ConditionSeverityInfo, "%s", err.Error())
 		return err
 	}
 	r.Log.Info("Successfully Updated Capi Provider Version")
