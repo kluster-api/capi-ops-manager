@@ -67,7 +67,7 @@ func (r *ClusterOpsRequestReconciler) updateControlPlaneVersion(cluster *capi.Cl
 		err = fmt.Errorf("unknown Control Plane Kind")
 	}
 	if err != nil {
-		conditions.MarkFalse(r.ClusterOps, opsapi.ControlPlaneUpdateCondition, opsapi.ControlPlaneUpdateFailedReason, v1.ConditionSeverityError, err.Error())
+		conditions.MarkFalse(r.ClusterOps, opsapi.ControlPlaneUpdateCondition, opsapi.ControlPlaneUpdateFailedReason, v1.ConditionSeverityError, "%s", err.Error())
 		return false, err
 	}
 	if reKey {

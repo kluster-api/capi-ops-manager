@@ -57,7 +57,7 @@ func (r *ClusterOpsRequestReconciler) updateClusterMachinePoolVersion(clusterNam
 	for _, mp := range machinePools.Items {
 		reKey, err = r.updateMachinePoolVersion(&mp)
 		if err != nil {
-			conditions.MarkFalse(r.ClusterOps, opsapi.MachinePoolUpdateCondition, opsapi.MachinePoolUpdateFailedReason, kmapi.ConditionSeverityInfo, err.Error())
+			conditions.MarkFalse(r.ClusterOps, opsapi.MachinePoolUpdateCondition, opsapi.MachinePoolUpdateFailedReason, kmapi.ConditionSeverityInfo, "%s", err.Error())
 			return false, err
 		}
 		if reKey {
