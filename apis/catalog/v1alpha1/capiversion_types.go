@@ -22,7 +22,7 @@ import (
 
 // CapiVersionSpec defines the desired state of CapiVersion
 type CapiVersionSpec struct {
-	CAPA CAPAVersionMatrix    `json:"capa"`
+	CAPA GenericVersionMatrix `json:"capa"`
 	CAPG GenericVersionMatrix `json:"capg"`
 	CAPZ GenericVersionMatrix `json:"capz"`
 	CAPH GenericVersionMatrix `json:"caph"`
@@ -30,11 +30,6 @@ type CapiVersionSpec struct {
 
 type GenericVersionMatrix struct {
 	DeployerImage string `json:"deployerImage"`
-}
-
-type CAPAVersionMatrix struct {
-	GenericVersionMatrix `json:",inline"`
-	EBSCSIDriverVersion  string `json:"ebsCSIDriverVersion"`
 }
 
 // CapiVersionStatus defines the observed state of CapiVersion
