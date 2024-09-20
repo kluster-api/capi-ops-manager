@@ -51,6 +51,13 @@ spec:
                 required:
                 - deployerImage
                 type: object
+              caph:
+                properties:
+                  deployerImage:
+                    type: string
+                required:
+                - deployerImage
+                type: object
               capz:
                 properties:
                   deployerImage:
@@ -61,6 +68,7 @@ spec:
             required:
             - capa
             - capg
+            - caph
             - capz
             type: object
           status:
