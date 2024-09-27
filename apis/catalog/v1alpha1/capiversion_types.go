@@ -29,7 +29,9 @@ type CapiVersionSpec struct {
 }
 
 type GenericVersionMatrix struct {
-	DeployerImage string `json:"deployerImage"`
+	DeployerImage      string `json:"deployerImage"`
+	GatewayAPIVersion  string `json:"gatewayAPIVersion"`
+	CertManagerVersion string `json:"certManagerVersion"`
 }
 
 type CAPAVersionMatrix struct {
