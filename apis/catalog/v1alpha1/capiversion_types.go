@@ -24,8 +24,9 @@ import (
 type CapiVersionSpec struct {
 	CAPA CAPAVersionMatrix    `json:"capa"`
 	CAPG GenericVersionMatrix `json:"capg"`
-	CAPZ GenericVersionMatrix `json:"capz"`
 	CAPH GenericVersionMatrix `json:"caph"`
+	CAPK GenericVersionMatrix `json:"capk"`
+	CAPZ GenericVersionMatrix `json:"capz"`
 }
 
 type GenericVersionMatrix struct {
