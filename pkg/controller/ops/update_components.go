@@ -43,6 +43,10 @@ func (r *ClusterOpsRequestReconciler) updateComponents() error {
 	if err != nil {
 		return err
 	}
+	err = os.Setenv("EXP_MACHINE_POOL", "true")
+	if err != nil {
+		return err
+	}
 	client, err := clusterctl.New(r.ctx, "")
 	if err != nil {
 		r.Log.Info("Failed to get clusterctl client")
