@@ -26,13 +26,13 @@ import (
 	clusterctl "sigs.k8s.io/cluster-api/cmd/clusterctl/client"
 )
 
-func (r *ClusterOpsRequestReconciler) updateComponents() error {
-	if r.ClusterOps.Spec.UpdateVersion.TargetVersion.Providers == nil {
+func (r *ClusterOpsRequestReconciler) updateComponents(clusterOps *opsapi.ClusterOpsRequest) error {
+	if clusterOps.Spec.UpdateVersion.TargetVersion.Providers == nil {
 		return nil
 	}
-	if !conditions.HasCondition(r.ClusterOps.Status.Conditions, string(opsapi.CapiProvidersUpdateCondition)) {
+	if !conditions.HasCondition(clusterOps.Status.Conditions, string(opsapi.CapiProvidersUpdateCondition)) {
 		r.Log.Info("Started updating Capi Providers version")
-		conditions.MarkFalse(r.ClusterOps, opsapi.CapiProvidersUpdateCondition, opsapi.CapiProvidersUpdateStartedReason, kmapi.ConditionSeverityInfo, "")
+		conditions.MarkFalse(clusterOps, opsapi.CapiProvidersUpdateCondition, opsapi.CapiProvidersUpdateStartedReason, kmapi.ConditionSeverityInfo, "")
 		return nil
 	}
 	err := os.Setenv("AWS_B64ENCODED_CREDENTIALS", "")
@@ -50,22 +50,22 @@ func (r *ClusterOpsRequestReconciler) updateComponents() error {
 	client, err := clusterctl.New(r.ctx, "")
 	if err != nil {
 		r.Log.Info("Failed to get clusterctl client")
-		conditions.MarkFalse(r.ClusterOps, opsapi.CapiProvidersUpdateCondition, opsapi.CapiProvidersUpdateFailedReason, kmapi.ConditionSeverityInfo, "%s", err.Error())
+		conditions.MarkFalse(clusterOps, opsapi.CapiProvidersUpdateCondition, opsapi.CapiProvidersUpdateFailedReason, kmapi.ConditionSeverityInfo, "%s", err.Error())
 		return err
 	}
 
 	err = client.ApplyUpgrade(r.ctx, clusterctl.ApplyUpgradeOptions{
-		CoreProvider:            r.ClusterOps.Spec.UpdateVersion.TargetVersion.Providers.Core,
-		BootstrapProviders:      []string{r.ClusterOps.Spec.UpdateVersion.TargetVersion.Providers.Bootstrap},
-		ControlPlaneProviders:   []string{r.ClusterOps.Spec.UpdateVersion.TargetVersion.Providers.ControlPlane},
-		InfrastructureProviders: []string{r.ClusterOps.Spec.UpdateVersion.TargetVersion.Providers.Infrastructure},
+		CoreProvider:            clusterOps.Spec.UpdateVersion.TargetVersion.Providers.Core,
+		BootstrapProviders:      []string{clusterOps.Spec.UpdateVersion.TargetVersion.Providers.Bootstrap},
+		ControlPlaneProviders:   []string{clusterOps.Spec.UpdateVersion.TargetVersion.Providers.ControlPlane},
+		InfrastructureProviders: []string{clusterOps.Spec.UpdateVersion.TargetVersion.Providers.Infrastructure},
 	})
 	if err != nil {
 		r.Log.Info("Failed to updated Capi provider versions")
-		conditions.MarkFalse(r.ClusterOps, opsapi.CapiProvidersUpdateCondition, opsapi.CapiProvidersUpdateFailedReason, kmapi.ConditionSeverityInfo, "%s", err.Error())
+		conditions.MarkFalse(clusterOps, opsapi.CapiProvidersUpdateCondition, opsapi.CapiProvidersUpdateFailedReason, kmapi.ConditionSeverityInfo, "%s", err.Error())
 		return err
 	}
 	r.Log.Info("Successfully Updated Capi Provider Version")
-	conditions.MarkTrue(r.ClusterOps, opsapi.CapiProvidersUpdateCondition)
+	conditions.MarkTrue(clusterOps, opsapi.CapiProvidersUpdateCondition)
 	return nil
 }

@@ -31,48 +31,48 @@ import (
 
 const GCPManagedControlPlaneKind = "GCPManagedControlPlane"
 
-func (r *ClusterOpsRequestReconciler) updateClusterVersion(cluster *capi.Cluster) (bool, error) {
+func (r *ClusterOpsRequestReconciler) updateClusterVersion(cluster *capi.Cluster, clusterOps *opsapi.ClusterOpsRequest) (bool, error) {
 	var reKey bool
 	var err error
-	reKey, err = r.updateControlPlaneVersion(cluster)
+	reKey, err = r.updateControlPlaneVersion(cluster, clusterOps)
 	if err != nil || reKey {
 		return reKey, err
 	}
-	reKey, err = r.updateClusterMachinePoolVersion(cluster.Name)
+	reKey, err = r.updateClusterMachinePoolVersion(cluster.Name, clusterOps)
 	if err != nil || reKey {
 		return reKey, err
 	}
-	return false, r.updateComponents()
+	return false, r.updateComponents(clusterOps)
 }
 
-func (r *ClusterOpsRequestReconciler) updateControlPlaneVersion(cluster *capi.Cluster) (bool, error) {
-	if !conditions.HasCondition(r.ClusterOps.Status.Conditions, string(opsapi.ControlPlaneUpdateCondition)) {
+func (r *ClusterOpsRequestReconciler) updateControlPlaneVersion(cluster *capi.Cluster, clusterOps *opsapi.ClusterOpsRequest) (bool, error) {
+	if !conditions.HasCondition(clusterOps.Status.Conditions, string(opsapi.ControlPlaneUpdateCondition)) {
 		r.Log.Info("Started updating control plane version")
-		conditions.MarkFalse(r.ClusterOps, opsapi.ControlPlaneUpdateCondition, opsapi.ControlPlaneUpdateStartedReason, v1.ConditionSeverityInfo, "")
+		conditions.MarkFalse(clusterOps, opsapi.ControlPlaneUpdateCondition, opsapi.ControlPlaneUpdateStartedReason, v1.ConditionSeverityInfo, "")
 		return false, nil
 	}
-	if conditions.IsConditionTrue(r.ClusterOps.Status.Conditions, string(opsapi.ControlPlaneUpdateCondition)) {
+	if conditions.IsConditionTrue(clusterOps.Status.Conditions, string(opsapi.ControlPlaneUpdateCondition)) {
 		return false, nil
 	}
 	var reKey bool
 	var err error
 	namespacedName := types.NamespacedName{Namespace: cluster.Spec.ControlPlaneRef.Namespace, Name: cluster.Spec.ControlPlaneRef.Name}
 	if cluster.Spec.ControlPlaneRef.Kind == capz.AzureManagedControlPlaneKind {
-		reKey, err = r.updateAzureManagedControlPlane(namespacedName)
+		reKey, err = r.updateAzureManagedControlPlane(namespacedName, clusterOps)
 	} else if cluster.Spec.ControlPlaneRef.Kind == GCPManagedControlPlaneKind {
-		reKey, err = r.updateGCPManagedControlPlane(namespacedName)
+		reKey, err = r.updateGCPManagedControlPlane(namespacedName, clusterOps)
 	} else if cluster.Spec.ControlPlaneRef.Kind == capa.AWSManagedControlPlaneKind {
-		reKey, err = r.updateAWSManagedControlPlane(namespacedName)
+		reKey, err = r.updateAWSManagedControlPlane(namespacedName, clusterOps)
 	} else {
 		err = fmt.Errorf("unknown Control Plane Kind")
 	}
 	if err != nil {
-		conditions.MarkFalse(r.ClusterOps, opsapi.ControlPlaneUpdateCondition, opsapi.ControlPlaneUpdateFailedReason, v1.ConditionSeverityError, "%s", err.Error())
+		conditions.MarkFalse(clusterOps, opsapi.ControlPlaneUpdateCondition, opsapi.ControlPlaneUpdateFailedReason, v1.ConditionSeverityError, "%s", err.Error())
 		return false, err
 	}
 	if reKey {
 		return true, nil
 	}
-	conditions.MarkTrue(r.ClusterOps, opsapi.ControlPlaneUpdateCondition)
+	conditions.MarkTrue(clusterOps, opsapi.ControlPlaneUpdateCondition)
 	return false, nil
 }

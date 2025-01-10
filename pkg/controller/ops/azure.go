@@ -29,8 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *ClusterOpsRequestReconciler) updateAzureManagedControlPlane(namespacedName types.NamespacedName) (bool, error) {
-	if conditions.IsConditionTrue(r.ClusterOps.GetConditions(), string(opsapi.ControlPlaneUpdateCondition)) {
+func (r *ClusterOpsRequestReconciler) updateAzureManagedControlPlane(namespacedName types.NamespacedName, clusterOps *opsapi.ClusterOpsRequest) (bool, error) {
+	if conditions.IsConditionTrue(clusterOps.GetConditions(), string(opsapi.ControlPlaneUpdateCondition)) {
 		return false, nil
 	}
 	azureManagedCP := &capz.AzureManagedControlPlane{}
@@ -40,14 +40,14 @@ func (r *ClusterOpsRequestReconciler) updateAzureManagedControlPlane(namespacedN
 	}
 	_, err = clientutil.CreateOrPatch(r.ctx, r.KBClient, azureManagedCP, func(obj client.Object, createOp bool) client.Object {
 		in := obj.(*capz.AzureManagedControlPlane)
-		in.Spec.Version = *r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster
+		in.Spec.Version = *clusterOps.Spec.UpdateVersion.TargetVersion.Cluster
 		return in
 	})
 	if err != nil {
 		return false, err
 	}
 
-	if !r.isAzureManagedControlPlaneReady(azureManagedCP) || !isVersionEqual(azureManagedCP.Status.Version, ptr.Deref(r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster, "")) {
+	if !r.isAzureManagedControlPlaneReady(azureManagedCP) || !isVersionEqual(azureManagedCP.Status.Version, ptr.Deref(clusterOps.Spec.UpdateVersion.TargetVersion.Cluster, "")) {
 		r.Log.Info("Waiting for AzureManagedControlPlane to be ready")
 		return true, nil
 	}

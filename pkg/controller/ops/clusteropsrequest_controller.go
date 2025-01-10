@@ -34,12 +34,11 @@ import (
 
 // ClusterOpsRequestReconciler reconciles a ClusterOpsRequest object
 type ClusterOpsRequestReconciler struct {
-	ctx        context.Context
-	committer  func(ctx context.Context, old, obj committer.StatusGetter[*opsapi.ClusterOpsRequestStatus]) error
-	Log        logr.Logger
-	ClusterOps *opsapi.ClusterOpsRequest
-	KBClient   client.Client
-	Scheme     *runtime.Scheme
+	ctx       context.Context
+	committer func(ctx context.Context, old, obj committer.StatusGetter[*opsapi.ClusterOpsRequestStatus]) error
+	Log       logr.Logger
+	KBClient  client.Client
+	Scheme    *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=ops.klusters.dev,resources=clusteropsrequests,verbs=get;list;watch;create;update;patch;delete
@@ -53,31 +52,34 @@ type ClusterOpsRequestReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.3/pkg/reconcile
 func (r *ClusterOpsRequestReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.Log = log.FromContext(ctx)
+	r.ctx = ctx
 	r.committer = committer.NewStatusCommitter[*opsapi.ClusterOpsRequest, *opsapi.ClusterOpsRequestStatus](r.KBClient.Status())
 
 	r.Log.Info("Started reconciling ClusterOpsRequest")
 
-	message, err := r.updateClusterOpsRequestReconcile(ctx, req.NamespacedName)
+	clusterOps := &opsapi.ClusterOpsRequest{}
+	err := r.KBClient.Get(ctx, req.NamespacedName, clusterOps)
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
-		return r.requeueWithError(message, err)
+		return r.requeueWithError("Failed to get ClusterOps", err)
 	}
-	if r.ClusterOps.Status.Phase == opsapi.ClusterOpsRequestPhaseSuccessful || r.ClusterOps.Status.Phase == opsapi.ClusterOpsRequestPhaseFailed || r.ClusterOps.Status.Phase == opsapi.ClusterOpsRequestPhaseSkipped {
+
+	if clusterOps.Status.Phase == opsapi.ClusterOpsRequestPhaseSuccessful || clusterOps.Status.Phase == opsapi.ClusterOpsRequestPhaseFailed || clusterOps.Status.Phase == opsapi.ClusterOpsRequestPhaseSkipped {
 		return r.reconciled()
 	}
-	if r.ClusterOps.Status.Phase == "" {
-		return ctrl.Result{}, r.updateClusterOpsRequestStatus(req.NamespacedName)
+	if clusterOps.Status.Phase == "" {
+		return ctrl.Result{}, r.updateClusterOpsRequestStatus(req.NamespacedName, clusterOps)
 	}
 
 	cluster := &capi.Cluster{}
-	err = r.KBClient.Get(ctx, types.NamespacedName{Name: r.ClusterOps.Spec.ClusterRef.Name, Namespace: r.ClusterOps.Spec.ClusterRef.Namespace}, cluster)
+	err = r.KBClient.Get(ctx, types.NamespacedName{Name: clusterOps.Spec.ClusterRef.Name, Namespace: clusterOps.Spec.ClusterRef.Namespace}, cluster)
 	if err != nil {
 		return r.requeueWithError("failed to get cluster", err)
 	}
 
-	if r.ClusterOps.Status.Phase != opsapi.ClusterOpsRequestPhaseInProgress {
+	if clusterOps.Status.Phase != opsapi.ClusterOpsRequestPhaseInProgress {
 		if capi.ClusterPhase(cluster.Status.Phase) != capi.ClusterPhaseProvisioned {
 			return ctrl.Result{
 				RequeueAfter: retryInterval,
@@ -85,8 +87,8 @@ func (r *ClusterOpsRequestReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}
 	var reKey bool
-	if r.ClusterOps.GetRequestType().(opsapi.ClusterOpsRequestType) == opsapi.ClusterOpsRequestTypeUpdateVersion {
-		reKey, err = r.updateClusterVersion(cluster)
+	if clusterOps.GetRequestType().(opsapi.ClusterOpsRequestType) == opsapi.ClusterOpsRequestTypeUpdateVersion {
+		reKey, err = r.updateClusterVersion(cluster, clusterOps)
 		if err != nil {
 			return r.requeueWithError("failed to update version", err)
 		}
@@ -97,5 +99,5 @@ func (r *ClusterOpsRequestReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		reconciledResult.RequeueAfter = retryInterval
 	}
 
-	return reconciledResult, r.updateClusterOpsRequestStatus(req.NamespacedName)
+	return reconciledResult, r.updateClusterOpsRequestStatus(req.NamespacedName, clusterOps)
 }

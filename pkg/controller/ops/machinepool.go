@@ -33,12 +33,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *ClusterOpsRequestReconciler) updateClusterMachinePoolVersion(clusterName string) (bool, error) {
-	if !conditions.HasCondition(r.ClusterOps.Status.Conditions, string(opsapi.MachinePoolUpdateCondition)) {
-		conditions.MarkFalse(r.ClusterOps, opsapi.MachinePoolUpdateCondition, opsapi.MachinePoolUpdateStartedReason, kmapi.ConditionSeverityInfo, "")
+func (r *ClusterOpsRequestReconciler) updateClusterMachinePoolVersion(clusterName string, clusterOps *opsapi.ClusterOpsRequest) (bool, error) {
+	if !conditions.HasCondition(clusterOps.Status.Conditions, string(opsapi.MachinePoolUpdateCondition)) {
+		conditions.MarkFalse(clusterOps, opsapi.MachinePoolUpdateCondition, opsapi.MachinePoolUpdateStartedReason, kmapi.ConditionSeverityInfo, "")
 		return false, nil
 	}
-	if conditions.IsConditionTrue(r.ClusterOps.Status.Conditions, string(opsapi.MachinePoolUpdateCondition)) {
+	if conditions.IsConditionTrue(clusterOps.Status.Conditions, string(opsapi.MachinePoolUpdateCondition)) {
 		return false, nil
 	}
 	machinePools := &capiexp.MachinePoolList{}
@@ -55,9 +55,9 @@ func (r *ClusterOpsRequestReconciler) updateClusterMachinePoolVersion(clusterNam
 	var reKey bool
 
 	for _, mp := range machinePools.Items {
-		reKey, err = r.updateMachinePoolVersion(&mp)
+		reKey, err = r.updateMachinePoolVersion(&mp, clusterOps)
 		if err != nil {
-			conditions.MarkFalse(r.ClusterOps, opsapi.MachinePoolUpdateCondition, opsapi.MachinePoolUpdateFailedReason, kmapi.ConditionSeverityInfo, "%s", err.Error())
+			conditions.MarkFalse(clusterOps, opsapi.MachinePoolUpdateCondition, opsapi.MachinePoolUpdateFailedReason, kmapi.ConditionSeverityInfo, "%s", err.Error())
 			return false, err
 		}
 		if reKey {
@@ -65,17 +65,17 @@ func (r *ClusterOpsRequestReconciler) updateClusterMachinePoolVersion(clusterNam
 		}
 	}
 	r.Log.Info("Successfully Updated all MachinePools Version")
-	conditions.MarkTrue(r.ClusterOps, opsapi.MachinePoolUpdateCondition)
+	conditions.MarkTrue(clusterOps, opsapi.MachinePoolUpdateCondition)
 	return false, nil
 }
 
-func (r *ClusterOpsRequestReconciler) updateMachinePoolVersion(mp *capiexp.MachinePool) (bool, error) {
-	vt, err := r.patchMachinePoolVersion(mp)
+func (r *ClusterOpsRequestReconciler) updateMachinePoolVersion(mp *capiexp.MachinePool, clusterOps *opsapi.ClusterOpsRequest) (bool, error) {
+	vt, err := r.patchMachinePoolVersion(mp, clusterOps)
 	if err != nil {
 		return false, err
 	}
 
-	if vt == kutil.VerbPatched || !r.isMachinePoolConditionUpdatedForOps(mp) || capiexp.MachinePoolPhase(mp.Status.Phase) != capiexp.MachinePoolPhaseRunning {
+	if vt == kutil.VerbPatched || !r.isMachinePoolConditionUpdatedForOps(mp, clusterOps) || capiexp.MachinePoolPhase(mp.Status.Phase) != capiexp.MachinePoolPhaseRunning {
 		r.Log.Info("Waiting for MachinePool to be Running", "Name", mp.GetName(), "Namespace", mp.GetNamespace())
 		return true, nil
 	}
@@ -83,19 +83,19 @@ func (r *ClusterOpsRequestReconciler) updateMachinePoolVersion(mp *capiexp.Machi
 	return false, nil
 }
 
-func (r *ClusterOpsRequestReconciler) patchMachinePoolVersion(mp *capiexp.MachinePool) (kutil.VerbType, error) {
-	if isVersionEqual(ptr.Deref(mp.Spec.Template.Spec.Version, "0"), ptr.Deref(r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster, "0")) {
+func (r *ClusterOpsRequestReconciler) patchMachinePoolVersion(mp *capiexp.MachinePool, clusterOps *opsapi.ClusterOpsRequest) (kutil.VerbType, error) {
+	if isVersionEqual(ptr.Deref(mp.Spec.Template.Spec.Version, "0"), ptr.Deref(clusterOps.Spec.UpdateVersion.TargetVersion.Cluster, "0")) {
 		return kutil.VerbUnchanged, nil
 	}
 	r.Log.Info("Patching MachinePool Version", "Name", mp.GetName(), "Namespace", mp.GetNamespace())
 	return clientutil.CreateOrPatch(r.ctx, r.KBClient, mp, func(obj client.Object, createOp bool) client.Object {
 		in := obj.(*capiexp.MachinePool)
-		in.Spec.Template.Spec.Version = r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster
+		in.Spec.Template.Spec.Version = clusterOps.Spec.UpdateVersion.TargetVersion.Cluster
 		return in
 	})
 }
 
-func (r *ClusterOpsRequestReconciler) isMachinePoolConditionUpdatedForOps(mp *capiexp.MachinePool) bool {
+func (r *ClusterOpsRequestReconciler) isMachinePoolConditionUpdatedForOps(mp *capiexp.MachinePool, clusterOps *opsapi.ClusterOpsRequest) bool {
 	conds := mp.GetConditions()
 	mpLastTransTime := metav1.Time{}
 	for _, c := range conds {
@@ -104,7 +104,7 @@ func (r *ClusterOpsRequestReconciler) isMachinePoolConditionUpdatedForOps(mp *ca
 		}
 	}
 	opsLastTransTime := metav1.Time{}
-	opsConds := r.ClusterOps.GetConditions()
+	opsConds := clusterOps.GetConditions()
 	for _, c := range opsConds {
 		if c.Type == opsapi.MachinePoolUpdateCondition {
 			opsLastTransTime = c.LastTransitionTime

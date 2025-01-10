@@ -28,8 +28,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *ClusterOpsRequestReconciler) updateAWSManagedControlPlane(namespacedName types.NamespacedName) (bool, error) {
-	if conditions.IsConditionTrue(r.ClusterOps.GetConditions(), string(opsapi.ControlPlaneUpdateCondition)) {
+func (r *ClusterOpsRequestReconciler) updateAWSManagedControlPlane(namespacedName types.NamespacedName, clusterOps *opsapi.ClusterOpsRequest) (bool, error) {
+	if conditions.IsConditionTrue(clusterOps.GetConditions(), string(opsapi.ControlPlaneUpdateCondition)) {
 		return false, nil
 	}
 	awsManagedCP := &capa.AWSManagedControlPlane{}
@@ -39,14 +39,14 @@ func (r *ClusterOpsRequestReconciler) updateAWSManagedControlPlane(namespacedNam
 	}
 	_, err = clientutil.CreateOrPatch(r.ctx, r.KBClient, awsManagedCP, func(obj client.Object, createOp bool) client.Object {
 		in := obj.(*capa.AWSManagedControlPlane)
-		in.Spec.Version = r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster
+		in.Spec.Version = clusterOps.Spec.UpdateVersion.TargetVersion.Cluster
 		return in
 	})
 	if err != nil {
 		return false, err
 	}
 
-	if !r.isAWSManagedControlPlaneReady(awsManagedCP) {
+	if !r.isAWSManagedControlPlaneReady(awsManagedCP, clusterOps) {
 		r.Log.Info("Waiting for AWSManagedControlPlane to be ready")
 		return true, nil
 	}
@@ -54,7 +54,7 @@ func (r *ClusterOpsRequestReconciler) updateAWSManagedControlPlane(namespacedNam
 	return false, nil
 }
 
-func (r *ClusterOpsRequestReconciler) isAWSManagedControlPlaneReady(awsManagedCP *capa.AWSManagedControlPlane) bool {
+func (r *ClusterOpsRequestReconciler) isAWSManagedControlPlaneReady(awsManagedCP *capa.AWSManagedControlPlane, clusterOps *opsapi.ClusterOpsRequest) bool {
 	conds := awsManagedCP.GetConditions()
 	cpLastTransTime := metav1.Time{}
 	for _, c := range conds {
@@ -63,7 +63,7 @@ func (r *ClusterOpsRequestReconciler) isAWSManagedControlPlaneReady(awsManagedCP
 		}
 	}
 	opsLastTransTime := metav1.Time{}
-	opsConds := r.ClusterOps.GetConditions()
+	opsConds := clusterOps.GetConditions()
 	for _, c := range opsConds {
 		if c.Type == opsapi.ControlPlaneUpdateCondition {
 			opsLastTransTime = c.LastTransitionTime
