@@ -29,8 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *ClusterOpsRequestReconciler) updateGCPManagedControlPlane(namespacedName types.NamespacedName) (bool, error) {
-	if conditions.IsConditionTrue(r.ClusterOps.GetConditions(), string(opsapi.ControlPlaneUpdateCondition)) {
+func (r *ClusterOpsRequestReconciler) updateGCPManagedControlPlane(namespacedName types.NamespacedName, clusterOps *opsapi.ClusterOpsRequest) (bool, error) {
+	if conditions.IsConditionTrue(clusterOps.GetConditions(), string(opsapi.ControlPlaneUpdateCondition)) {
 		return false, nil
 	}
 	gcpManagedCP := &capg.GCPManagedControlPlane{}
@@ -40,14 +40,14 @@ func (r *ClusterOpsRequestReconciler) updateGCPManagedControlPlane(namespacedNam
 	}
 	_, err = clientutil.CreateOrPatch(r.ctx, r.KBClient, gcpManagedCP, func(obj client.Object, createOp bool) client.Object {
 		in := obj.(*capg.GCPManagedControlPlane)
-		in.Spec.ControlPlaneVersion = r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster
+		in.Spec.ControlPlaneVersion = clusterOps.Spec.UpdateVersion.TargetVersion.Cluster
 		return in
 	})
 	if err != nil {
 		return false, err
 	}
 
-	if !r.isGCPManagedControlPlaneReady(gcpManagedCP) || !isVersionEqual(gcpManagedCP.Status.CurrentVersion, ptr.Deref(r.ClusterOps.Spec.UpdateVersion.TargetVersion.Cluster, "")) {
+	if !r.isGCPManagedControlPlaneReady(gcpManagedCP) || !isVersionEqual(gcpManagedCP.Status.CurrentVersion, ptr.Deref(clusterOps.Spec.UpdateVersion.TargetVersion.Cluster, "")) {
 		r.Log.Info("Waiting for GCPManagedControlPlane to be ready")
 		return true, nil
 	}

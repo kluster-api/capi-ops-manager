@@ -17,7 +17,6 @@ limitations under the License.
 package ops
 
 import (
-	"context"
 	"time"
 
 	opsapi "go.klusters.dev/capi-ops-manager/apis/ops/v1alpha1"
@@ -28,17 +27,6 @@ import (
 )
 
 const retryInterval = 1 * time.Minute
-
-func (r *ClusterOpsRequestReconciler) updateClusterOpsRequestReconcile(ctx context.Context, namespacedName client.ObjectKey) (string, error) {
-	clusterOps := &opsapi.ClusterOpsRequest{}
-	if err := r.KBClient.Get(ctx, namespacedName, clusterOps); err != nil {
-		return "Failed to get ClusterOps", err
-	}
-	r.ClusterOps = clusterOps
-	r.ctx = ctx
-
-	return "", nil
-}
 
 // reconciled returns an empty result with nil error to signal a successful reconcile
 // to the controller manager
@@ -54,15 +42,15 @@ func (r *ClusterOpsRequestReconciler) requeueWithError(msg string, err error) (c
 	return ctrl.Result{}, err
 }
 
-func (r *ClusterOpsRequestReconciler) updateClusterOpsRequestStatus(namespacedName client.ObjectKey) error {
+func (r *ClusterOpsRequestReconciler) updateClusterOpsRequestStatus(namespacedName client.ObjectKey, oldClusterOps *opsapi.ClusterOpsRequest) error {
 	clusterOps := &opsapi.ClusterOpsRequest{}
 	if err := r.KBClient.Get(r.ctx, namespacedName, clusterOps); err != nil {
 		return err
 	}
-	cutil.SetSummary(r.ClusterOps, cutil.WithConditions(opsapi.ConditionsOrder()...))
-	r.ClusterOps.Status.Phase = opsapi.GetPhase(r.ClusterOps)
+	cutil.SetSummary(oldClusterOps, cutil.WithConditions(opsapi.ConditionsOrder()...))
+	oldClusterOps.Status.Phase = opsapi.GetPhase(oldClusterOps)
 
-	if err := r.committer(r.ctx, clusterOps, r.ClusterOps); err != nil {
+	if err := r.committer(r.ctx, clusterOps, oldClusterOps); err != nil {
 		return err
 	}
 	return nil
