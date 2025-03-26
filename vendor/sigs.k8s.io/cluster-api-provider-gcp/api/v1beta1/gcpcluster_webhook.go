@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
+	"fmt"
 	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -33,34 +35,44 @@ var clusterlog = logf.Log.WithName("gcpcluster-resource")
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (c *GCPCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	w := new(gcpClusterWebhook)
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).
+		WithValidator(w).
+		WithDefaulter(w).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpcluster,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=gcpclusters,versions=v1beta1,name=validation.gcpcluster.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1beta1
 // +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-gcpcluster,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=gcpclusters,versions=v1beta1,name=default.gcpcluster.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1beta1
 
-var _ webhook.Validator = &GCPCluster{}
-var _ webhook.Defaulter = &GCPCluster{}
+type gcpClusterWebhook struct{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (c *GCPCluster) Default() {
-	clusterlog.Info("default", "name", c.Name)
+var (
+	_ webhook.CustomValidator = &gcpClusterWebhook{}
+	_ webhook.CustomDefaulter = &gcpClusterWebhook{}
+)
+
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
+func (_ *gcpClusterWebhook) Default(_ context.Context, _ runtime.Object) error {
+	return nil
 }
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (c *GCPCluster) ValidateCreate() (admission.Warnings, error) {
-	clusterlog.Info("validate create", "name", c.Name)
-
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
+func (_ *gcpClusterWebhook) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (c *GCPCluster) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, error) {
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
+func (_ *gcpClusterWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	c, ok := newObj.(*GCPCluster)
+	if !ok {
+		return nil, fmt.Errorf("expected an GCPCluster object but got %T", c)
+	}
+
 	clusterlog.Info("validate update", "name", c.Name)
 	var allErrs field.ErrorList
-	old := oldRaw.(*GCPCluster)
+	old := oldObj.(*GCPCluster)
 
 	if !reflect.DeepEqual(c.Spec.Project, old.Spec.Project) {
 		allErrs = append(allErrs,
@@ -83,6 +95,27 @@ func (c *GCPCluster) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, 
 		)
 	}
 
+	if !reflect.DeepEqual(c.Spec.LoadBalancer, old.Spec.LoadBalancer) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "LoadBalancer"),
+				c.Spec.LoadBalancer, "field is immutable"),
+		)
+	}
+
+	if c.Spec.Network.Mtu < int64(1300) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "Network", "Mtu"),
+				c.Spec.Network.Mtu, "field cannot be lesser than 1300"),
+		)
+	}
+
+	if c.Spec.Network.Mtu > int64(8896) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "Network", "Mtu"),
+				c.Spec.Network.Mtu, "field cannot be greater than 8896"),
+		)
+	}
+
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
@@ -90,9 +123,7 @@ func (c *GCPCluster) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, 
 	return nil, apierrors.NewInvalid(GroupVersion.WithKind("GCPCluster").GroupKind(), c.Name, allErrs)
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (c *GCPCluster) ValidateDelete() (admission.Warnings, error) {
-	clusterlog.Info("validate delete", "name", c.Name)
-
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
+func (_ *gcpClusterWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

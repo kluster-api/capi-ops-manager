@@ -60,8 +60,14 @@ func Global(clusterTopology *clusterv1.Topology, cluster *clusterv1.Cluster, pat
 			},
 		},
 	}
+	if cluster.Labels != nil || cluster.Annotations != nil {
+		builtin.Cluster.Metadata = &clusterv1.ObjectMeta{
+			Labels:      cluster.Labels,
+			Annotations: cluster.Annotations,
+		}
+	}
 	if cluster.Spec.ClusterNetwork != nil {
-		clusterNetworkIPFamily, _ := cluster.GetIPFamily() //nolint:staticcheck // We tolerate this until removal. See https://github.com/kubernetes-sigs/cluster-api/issues/7521.
+		clusterNetworkIPFamily, _ := cluster.GetIPFamily()
 		builtin.Cluster.Network = &runtimehooksv1.ClusterNetworkBuiltins{
 			IPFamily: ipFamilyToString(clusterNetworkIPFamily),
 		}

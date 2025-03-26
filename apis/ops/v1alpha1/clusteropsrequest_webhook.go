@@ -17,6 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
+	"fmt"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,37 +33,51 @@ import (
 var opslog = logf.Log.WithName("ops-manager-resource")
 
 func (c *ClusterOpsRequest) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	w := new(clusterOpsRequestWebhook)
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).
+		WithValidator(w).
+		WithDefaulter(w).
 		Complete()
 }
 
 //+kubebuilder:webhook:path=/mutate-ops-klusters-dev-v1alpha1-clusteropsrequest,mutating=true,failurePolicy=fail,sideEffects=None,groups=ops.klusters.dev,resources=clusteropsrequests,verbs=create;update,versions=v1alpha1,name=mclusteropsrequest.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &ClusterOpsRequest{}
+type clusterOpsRequestWebhook struct{}
 
-func (c *ClusterOpsRequest) Default() {
+var _ webhook.CustomDefaulter = &clusterOpsRequestWebhook{}
+
+func (_ *clusterOpsRequestWebhook) Default(_ context.Context, _ runtime.Object) error {
+	return nil
 }
 
 //+kubebuilder:webhook:path=/validate-ops-klusters-dev-v1alpha1-clusteropsrequest,mutating=false,failurePolicy=fail,sideEffects=None,groups=ops.klusters.dev,resources=clusteropsrequests,verbs=create;update,versions=v1alpha1,name=vclusteropsrequest.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Validator = &ClusterOpsRequest{}
+var _ webhook.CustomValidator = &clusterOpsRequestWebhook{}
 
-func (c *ClusterOpsRequest) ValidateCreate() (admission.Warnings, error) {
+func (_ *clusterOpsRequestWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+	c, ok := obj.(*ClusterOpsRequest)
+	if !ok {
+		return nil, fmt.Errorf("expected an ClusterOpsRequest object but got %T", c)
+	}
+
 	opslog.Info("validate create", "name", c.Name)
 	return c.ValidateCreateOrUpdate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (c *ClusterOpsRequest) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
+func (_ *clusterOpsRequestWebhook) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (admission.Warnings, error) {
+	c, ok := newObj.(*ClusterOpsRequest)
+	if !ok {
+		return nil, fmt.Errorf("expected an ClusterOpsRequest object but got %T", c)
+	}
+
 	opslog.Info("validate update", "name", c.Name)
 	return c.ValidateCreateOrUpdate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (c *ClusterOpsRequest) ValidateDelete() (admission.Warnings, error) {
-	opslog.Info("validate delete", "name", c.Name)
-
+func (_ *clusterOpsRequestWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
