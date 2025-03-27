@@ -17,61 +17,85 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
+	"fmt"
 	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	webhookutils "sigs.k8s.io/cluster-api-provider-azure/util/webhook"
 )
 
 // SetupWebhookWithManager sets up and registers the webhook with the manager.
 func (c *AzureCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	w := new(azureClusterWebhook)
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).
+		WithValidator(w).
+		WithDefaulter(w).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-azurecluster,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azureclusters,versions=v1beta1,name=validation.azurecluster.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 // +kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-azurecluster,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=azureclusters,versions=v1beta1,name=default.azurecluster.infrastructure.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Validator = &AzureCluster{}
-var _ webhook.Defaulter = &AzureCluster{}
+type azureClusterWebhook struct{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (c *AzureCluster) Default() {
+var _ webhook.CustomValidator = &azureClusterWebhook{}
+var _ webhook.CustomDefaulter = &azureClusterWebhook{}
+
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
+func (_ *azureClusterWebhook) Default(_ context.Context, obj runtime.Object) error {
+	c, ok := obj.(*AzureCluster)
+	if !ok {
+		return fmt.Errorf("expected an AzureCluster object but got %T", c)
+	}
+
 	c.setDefaults()
+	return nil
 }
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureCluster) ValidateCreate() (admission.Warnings, error) {
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
+func (_ *azureClusterWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+	c, ok := obj.(*AzureCluster)
+	if !ok {
+		return nil, fmt.Errorf("expected an AzureCluster object but got %T", c)
+	}
+
 	return c.validateCluster(nil)
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, error) {
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
+func (_ *azureClusterWebhook) ValidateUpdate(_ context.Context, oldRaw, newObj runtime.Object) (admission.Warnings, error) {
+	c, ok := newObj.(*AzureCluster)
+	if !ok {
+		return nil, fmt.Errorf("expected an AzureCluster object but got %T", c)
+	}
+
 	var allErrs field.ErrorList
 	old := oldRaw.(*AzureCluster)
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "ResourceGroup"),
+		field.NewPath("spec", "resourceGroup"),
 		old.Spec.ResourceGroup,
 		c.Spec.ResourceGroup); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "SubscriptionID"),
+		field.NewPath("spec", "subscriptionID"),
 		old.Spec.SubscriptionID,
 		c.Spec.SubscriptionID); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "Location"),
+		field.NewPath("spec", "location"),
 		old.Spec.Location,
 		c.Spec.Location); err != nil {
 		allErrs = append(allErrs, err)
@@ -79,14 +103,14 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings
 
 	if old.Spec.ControlPlaneEndpoint.Host != "" && c.Spec.ControlPlaneEndpoint.Host != old.Spec.ControlPlaneEndpoint.Host {
 		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("spec", "ControlPlaneEndpoint", "Host"),
+			field.Invalid(field.NewPath("spec", "controlPlaneEndpoint", "host"),
 				c.Spec.ControlPlaneEndpoint.Host, "field is immutable"),
 		)
 	}
 
 	if old.Spec.ControlPlaneEndpoint.Port != 0 && c.Spec.ControlPlaneEndpoint.Port != old.Spec.ControlPlaneEndpoint.Port {
 		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("spec", "ControlPlaneEndpoint", "Port"),
+			field.Invalid(field.NewPath("spec", "controlPlaneEndpoint", "port"),
 				c.Spec.ControlPlaneEndpoint.Port, "field is immutable"),
 		)
 	}
@@ -102,29 +126,36 @@ func (c *AzureCluster) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings
 		// if it's still not equal, return error.
 		if !reflect.DeepEqual(c.Spec.AzureEnvironment, old.Spec.AzureEnvironment) {
 			allErrs = append(allErrs,
-				field.Invalid(field.NewPath("spec", "AzureEnvironment"),
+				field.Invalid(field.NewPath("spec", "azureEnvironment"),
 					c.Spec.AzureEnvironment, "field is immutable"),
 			)
 		}
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "NetworkSpec", "PrivateDNSZoneName"),
+		field.NewPath("spec", "networkSpec", "privateDNSZoneName"),
 		old.Spec.NetworkSpec.PrivateDNSZoneName,
 		c.Spec.NetworkSpec.PrivateDNSZoneName); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "networkSpec", "privateDNSZoneResourceGroup"),
+		old.Spec.NetworkSpec.PrivateDNSZoneResourceGroup,
+		c.Spec.NetworkSpec.PrivateDNSZoneResourceGroup); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
 	// Allow enabling azure bastion but avoid disabling it.
 	if old.Spec.BastionSpec.AzureBastion != nil && !reflect.DeepEqual(old.Spec.BastionSpec.AzureBastion, c.Spec.BastionSpec.AzureBastion) {
 		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("spec", "BastionSpec", "AzureBastion"),
+			field.Invalid(field.NewPath("spec", "bastionSpec", "azureBastion"),
 				c.Spec.BastionSpec.AzureBastion, "azure bastion cannot be removed from a cluster"),
 		)
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("Spec", "NetworkSpec", "ControlPlaneOutboundLB"),
+		field.NewPath("spec", "networkSpec", "controlPlaneOutboundLB"),
 		old.Spec.NetworkSpec.ControlPlaneOutboundLB,
 		c.Spec.NetworkSpec.ControlPlaneOutboundLB); err != nil {
 		allErrs = append(allErrs, err)
@@ -187,7 +218,7 @@ func (c *AzureCluster) validateSubnetUpdate(old *AzureCluster) field.ErrorList {
 	return allErrs
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (c *AzureCluster) ValidateDelete() (admission.Warnings, error) {
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
+func (_ *azureClusterWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

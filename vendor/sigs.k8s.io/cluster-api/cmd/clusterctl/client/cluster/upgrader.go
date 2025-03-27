@@ -21,6 +21,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -57,8 +58,9 @@ type UpgradePlan struct {
 
 // UpgradeOptions defines the options used to upgrade installation.
 type UpgradeOptions struct {
-	WaitProviders       bool
-	WaitProviderTimeout time.Duration
+	WaitProviders                    bool
+	WaitProviderTimeout              time.Duration
+	EnableCRDStorageVersionMigration bool
 }
 
 // isPartialUpgrade returns true if at least one upgradeItem in the plan does not have a target version.
@@ -271,6 +273,10 @@ func (u *providerUpgrader) createCustomPlan(ctx context.Context, upgradeItems []
 			return nil, errors.Errorf("unable to complete that upgrade: the provider %s in not part of the management cluster", upgradeItem.InstanceName())
 		}
 
+		if upgradeItem.Version == "" {
+			upgradeItem.Version = provider.Version
+		}
+
 		// Retrieves the contract that is supported by the target version of the provider.
 		contract, err := u.getProviderContractByVersion(ctx, *provider, upgradeItem.NextVersion)
 		if err != nil {
@@ -357,34 +363,66 @@ func (u *providerUpgrader) doUpgrade(ctx context.Context, upgradePlan *UpgradePl
 		}
 	}
 
+	// Block unsupported skip upgrades for Core, Kubeadm Bootstrap, Kubeadm ControlPlane.
+	// NOTE: in future we might consider extending the clusterctl contract to support enforcing of skip upgrade
+	// rules for out of tree providers.
+	minVersionSkew := semver.MustParse("1.10.0")
+	for _, upgradeItem := range upgradePlan.Providers {
+		if !(upgradeItem.Type == string(clusterctlv1.CoreProviderType) ||
+			(upgradeItem.Type == string(clusterctlv1.BootstrapProviderType) && upgradeItem.ProviderName == config.KubeadmBootstrapProviderName) ||
+			(upgradeItem.Type == string(clusterctlv1.ControlPlaneProviderType) && upgradeItem.ProviderName == config.KubeadmControlPlaneProviderName)) {
+			continue
+		}
+
+		currentVersion, err := semver.ParseTolerant(upgradeItem.Version)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse current version for %s provider", upgradeItem.InstanceName())
+		}
+
+		if currentVersion.LT(minVersionSkew) {
+			continue
+		}
+
+		nextVersion, err := semver.ParseTolerant(upgradeItem.NextVersion)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse next version for %s provider", upgradeItem.InstanceName())
+		}
+
+		if nextVersion.Minor > currentVersion.Minor+3 {
+			return errors.Errorf("upgrade for %s provider can't skip more than 3 versions", upgradeItem.InstanceName())
+		}
+	}
+
 	// Ensure Providers are updated in the following order: Core, Bootstrap, ControlPlane, Infrastructure.
 	providers := upgradePlan.Providers
 	sort.Slice(providers, func(a, b int) bool {
 		return providers[a].GetProviderType().Order() < providers[b].GetProviderType().Order()
 	})
 
-	// Migrate CRs to latest CRD storage version, if necessary.
-	// Note: We have to do this before the providers are scaled down or deleted
-	// so conversion webhooks still work.
-	for _, upgradeItem := range providers {
-		// If there is not a specified next version, skip it (we are already up-to-date).
-		if upgradeItem.NextVersion == "" {
-			continue
-		}
+	if opts.EnableCRDStorageVersionMigration {
+		// Migrate CRs to latest CRD storage version, if necessary.
+		// Note: We have to do this before the providers are scaled down or deleted
+		// so conversion webhooks still work.
+		for _, upgradeItem := range providers {
+			// If there is not a specified next version, skip it (we are already up-to-date).
+			if upgradeItem.NextVersion == "" {
+				continue
+			}
 
-		// Gets the provider components for the target version.
-		components, err := u.getUpgradeComponents(ctx, upgradeItem)
-		if err != nil {
-			return err
-		}
+			// Gets the provider components for the target version.
+			components, err := u.getUpgradeComponents(ctx, upgradeItem)
+			if err != nil {
+				return err
+			}
 
-		c, err := u.proxy.NewClient(ctx)
-		if err != nil {
-			return err
-		}
+			c, err := u.proxy.NewClient(ctx)
+			if err != nil {
+				return err
+			}
 
-		if err := NewCRDMigrator(c).Run(ctx, components.Objs()); err != nil {
-			return err
+			if err := NewCRDMigrator(c).Run(ctx, components.Objs()); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -448,7 +486,11 @@ func (u *providerUpgrader) doUpgrade(ctx context.Context, upgradePlan *UpgradePl
 		}
 	}
 
-	return waitForProvidersReady(ctx, InstallOptions(opts), installQueue, u.proxy)
+	installOpts := InstallOptions{
+		WaitProviders:       opts.WaitProviders,
+		WaitProviderTimeout: opts.WaitProviderTimeout,
+	}
+	return waitForProvidersReady(ctx, installOpts, installQueue, u.proxy)
 }
 
 func (u *providerUpgrader) scaleDownProvider(ctx context.Context, provider clusterctlv1.Provider) error {

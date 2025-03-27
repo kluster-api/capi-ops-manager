@@ -173,6 +173,16 @@ type AWSManagedControlPlaneSpec struct { //nolint: maligned
 	// +optional
 	VpcCni VpcCni `json:"vpcCni,omitempty"`
 
+	// BootstrapSelfManagedAddons is used to set configuration options for
+	// bare EKS cluster without EKS default networking addons
+	// If you set this value to false when creating a cluster, the default networking add-ons will not be installed
+	// +kubebuilder:default=true
+	BootstrapSelfManagedAddons bool `json:"bootstrapSelfManagedAddons,omitempty"`
+
+	// RestrictPrivateSubnets indicates that the EKS control plane should only use private subnets.
+	// +kubebuilder:default=false
+	RestrictPrivateSubnets bool `json:"restrictPrivateSubnets,omitempty"`
+
 	// KubeProxy defines managed attributes of the kube-proxy daemonset
 	KubeProxy KubeProxy `json:"kubeProxy,omitempty"`
 }
@@ -279,6 +289,10 @@ type AWSManagedControlPlaneStatus struct {
 	// associated identity provider
 	// +optional
 	IdentityProviderStatus IdentityProviderStatus `json:"identityProviderStatus,omitempty"`
+	// Version represents the minimum Kubernetes version for the control plane machines
+	// in the cluster.
+	// +optional
+	Version *string `json:"version,omitempty"`
 }
 
 // +kubebuilder:object:root=true
