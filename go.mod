@@ -171,10 +171,9 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.3 // indirect
 )
 
-replace github.com/Azure/azure-service-operator/v2 => github.com/matthchr/azure-service-operator/v2 v2.1.1-0.20250325184212-354ff3a3fdee
-
-replace sigs.k8s.io/cluster-api-provider-azure => github.com/kluster-api/cluster-api-provider-azure v1.19.1-0.20250326080619-44aa0458e9d2
-
-replace sigs.k8s.io/cluster-api-provider-aws/v2 => github.com/kluster-api/cluster-api-provider-aws/v2 v2.8.2-0.20250326101223-9e4b398d45e1
-
-replace sigs.k8s.io/cluster-api-provider-gcp => github.com/kluster-api/cluster-api-provider-gcp v1.9.1-0.20250326130843-14cb33abb54a
+replace (
+	github.com/Azure/azure-service-operator/v2 => github.com/Azure/azure-service-operator/v2 v2.12.1-0.20250328191251-ba00156bcd68
+	sigs.k8s.io/cluster-api-provider-aws/v2 => github.com/kluster-api/cluster-api-provider-aws/v2 v2.8.2-0.20250326101223-9e4b398d45e1
+	sigs.k8s.io/cluster-api-provider-azure => github.com/kluster-api/cluster-api-provider-azure v1.19.1-0.20250328210553-d360b1e69942
+	sigs.k8s.io/cluster-api-provider-gcp => github.com/kluster-api/cluster-api-provider-gcp v1.9.1-0.20250326130843-14cb33abb54a
+)

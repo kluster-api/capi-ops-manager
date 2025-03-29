@@ -58,38 +58,38 @@ var _ webhook.CustomValidator = &azureMachineTemplateWebhook{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (_ *azureMachineTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	t := obj.(*AzureMachineTemplate)
-	spec := t.Spec.Template.Spec
+	r := obj.(*AzureMachineTemplate)
+	spec := r.Spec.Template.Spec
 
 	allErrs := ValidateAzureMachineSpec(spec)
 
 	if spec.RoleAssignmentName != "" {
 		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "roleAssignmentName"), t, AzureMachineTemplateRoleAssignmentNameMsg),
+			field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "roleAssignmentName"), r, AzureMachineTemplateRoleAssignmentNameMsg),
 		)
 	}
 
 	if spec.SystemAssignedIdentityRole != nil && spec.SystemAssignedIdentityRole.Name != "" {
 		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "systemAssignedIdentityRole", "name"), t, AzureMachineTemplateSystemAssignedIdentityRoleNameMsg),
+			field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "systemAssignedIdentityRole", "name"), r, AzureMachineTemplateSystemAssignedIdentityRoleNameMsg),
 		)
 	}
 
-	if (t.Spec.Template.Spec.NetworkInterfaces != nil) && len(t.Spec.Template.Spec.NetworkInterfaces) > 0 && t.Spec.Template.Spec.SubnetName != "" {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "networkInterfaces"), t.Spec.Template.Spec.NetworkInterfaces, "cannot set both NetworkInterfaces and machine SubnetName"))
+	if (r.Spec.Template.Spec.NetworkInterfaces != nil) && len(r.Spec.Template.Spec.NetworkInterfaces) > 0 && r.Spec.Template.Spec.SubnetName != "" {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "networkInterfaces"), r.Spec.Template.Spec.NetworkInterfaces, "cannot set both NetworkInterfaces and machine SubnetName"))
 	}
 
-	if (t.Spec.Template.Spec.NetworkInterfaces != nil) && len(t.Spec.Template.Spec.NetworkInterfaces) > 0 && t.Spec.Template.Spec.AcceleratedNetworking != nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "acceleratedNetworking"), t.Spec.Template.Spec.NetworkInterfaces, "cannot set both NetworkInterfaces and machine AcceleratedNetworking"))
+	if (r.Spec.Template.Spec.NetworkInterfaces != nil) && len(r.Spec.Template.Spec.NetworkInterfaces) > 0 && r.Spec.Template.Spec.AcceleratedNetworking != nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "acceleratedNetworking"), r.Spec.Template.Spec.NetworkInterfaces, "cannot set both NetworkInterfaces and machine AcceleratedNetworking"))
 	}
 
-	for i, networkInterface := range t.Spec.Template.Spec.NetworkInterfaces {
+	for i, networkInterface := range r.Spec.Template.Spec.NetworkInterfaces {
 		if networkInterface.PrivateIPConfigs < 1 {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "networkInterfaces", "privateIPConfigs"), t.Spec.Template.Spec.NetworkInterfaces[i].PrivateIPConfigs, "networkInterface privateIPConfigs must be set to a minimum value of 1"))
+			allErrs = append(allErrs, field.Invalid(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "networkInterfaces", "privateIPConfigs"), r.Spec.Template.Spec.NetworkInterfaces[i].PrivateIPConfigs, "networkInterface privateIPConfigs must be set to a minimum value of 1"))
 		}
 	}
 
-	if ptr.Deref(t.Spec.Template.Spec.DisableExtensionOperations, false) && len(t.Spec.Template.Spec.VMExtensions) > 0 {
+	if ptr.Deref(r.Spec.Template.Spec.DisableExtensionOperations, false) && len(r.Spec.Template.Spec.VMExtensions) > 0 {
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("AzureMachineTemplate", "spec", "template", "spec", "vmExtensions"), "VMExtensions must be empty when DisableExtensionOperations is true"))
 	}
 
@@ -97,7 +97,7 @@ func (_ *azureMachineTemplateWebhook) ValidateCreate(_ context.Context, obj runt
 		return nil, nil
 	}
 
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureMachineTemplateKind).GroupKind(), t.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind(AzureMachineTemplateKind).GroupKind(), r.Name, allErrs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
