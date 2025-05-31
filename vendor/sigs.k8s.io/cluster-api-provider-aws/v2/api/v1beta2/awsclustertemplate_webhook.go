@@ -19,6 +19,7 @@ package v1beta2
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/go-cmp/cmp"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,7 +47,7 @@ var _ webhook.CustomDefaulter = &awsClusterTemplateWebhook{}
 var _ webhook.CustomValidator = &awsClusterTemplateWebhook{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (_ *awsClusterTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
+func (*awsClusterTemplateWebhook) Default(_ context.Context, obj runtime.Object) error {
 	r, ok := obj.(*AWSClusterTemplate)
 	if !ok {
 		return fmt.Errorf("expected an AWSClusterTemplate object but got %T", r)
@@ -57,7 +58,7 @@ func (_ *awsClusterTemplateWebhook) Default(_ context.Context, obj runtime.Objec
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (_ *awsClusterTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (*awsClusterTemplateWebhook) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	r, ok := obj.(*AWSClusterTemplate)
 	if !ok {
 		return nil, fmt.Errorf("expected an AWSClusterTemplate object but got %T", r)
@@ -72,7 +73,7 @@ func (_ *awsClusterTemplateWebhook) ValidateCreate(_ context.Context, obj runtim
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (_ *awsClusterTemplateWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (*awsClusterTemplateWebhook) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	r, ok := newObj.(*AWSClusterTemplate)
 	if !ok {
 		return nil, fmt.Errorf("expected an AWSClusterTemplate object but got %T", r)
@@ -87,6 +88,6 @@ func (_ *awsClusterTemplateWebhook) ValidateUpdate(_ context.Context, oldObj, ne
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (_ *awsClusterTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*awsClusterTemplateWebhook) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
