@@ -435,12 +435,12 @@ func (*awsMachineWebhook) Default(_ context.Context, obj runtime.Object) error {
 	}
 
 	if r.ignitionEnabled() && r.Spec.Ignition.Version == "" {
-		if r.Spec.Ignition == nil {
-			r.Spec.Ignition = &Ignition{}
-		}
-
 		r.Spec.Ignition.Version = DefaultIgnitionVersion
 	}
+	if r.ignitionEnabled() && r.Spec.Ignition.StorageType == "" {
+		r.Spec.Ignition.StorageType = DefaultIgnitionStorageType
+	}
+
 	return nil
 }
 

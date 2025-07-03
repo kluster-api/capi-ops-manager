@@ -1,8 +1,8 @@
 # cel.dev/expr v0.22.1
 ## explicit; go 1.21.1
 cel.dev/expr
-# cloud.google.com/go/container v1.42.2
-## explicit; go 1.22.7
+# cloud.google.com/go/container v1.42.4
+## explicit; go 1.23.0
 cloud.google.com/go/container/apiv1/containerpb
 # dario.cat/mergo v1.0.1
 ## explicit; go 1.13
@@ -115,14 +115,66 @@ github.com/aws/aws-sdk-go/internal/strings
 github.com/aws/aws-sdk-go/internal/sync/singleflight
 github.com/aws/aws-sdk-go/private/protocol
 github.com/aws/aws-sdk-go/private/protocol/ec2query
-github.com/aws/aws-sdk-go/private/protocol/json/jsonutil
-github.com/aws/aws-sdk-go/private/protocol/jsonrpc
 github.com/aws/aws-sdk-go/private/protocol/query/queryutil
 github.com/aws/aws-sdk-go/private/protocol/rest
-github.com/aws/aws-sdk-go/private/protocol/restjson
 github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
 github.com/aws/aws-sdk-go/service/ec2
-github.com/aws/aws-sdk-go/service/eks
+# github.com/aws/aws-sdk-go-v2 v1.36.5
+## explicit; go 1.22
+github.com/aws/aws-sdk-go-v2/aws
+github.com/aws/aws-sdk-go-v2/aws/defaults
+github.com/aws/aws-sdk-go-v2/aws/middleware
+github.com/aws/aws-sdk-go-v2/aws/protocol/restjson
+github.com/aws/aws-sdk-go-v2/aws/ratelimit
+github.com/aws/aws-sdk-go-v2/aws/retry
+github.com/aws/aws-sdk-go-v2/aws/signer/internal/v4
+github.com/aws/aws-sdk-go-v2/aws/signer/v4
+github.com/aws/aws-sdk-go-v2/aws/transport/http
+github.com/aws/aws-sdk-go-v2/internal/auth
+github.com/aws/aws-sdk-go-v2/internal/auth/smithy
+github.com/aws/aws-sdk-go-v2/internal/context
+github.com/aws/aws-sdk-go-v2/internal/endpoints
+github.com/aws/aws-sdk-go-v2/internal/endpoints/awsrulesfn
+github.com/aws/aws-sdk-go-v2/internal/middleware
+github.com/aws/aws-sdk-go-v2/internal/rand
+github.com/aws/aws-sdk-go-v2/internal/sdk
+github.com/aws/aws-sdk-go-v2/internal/strings
+github.com/aws/aws-sdk-go-v2/internal/sync/singleflight
+github.com/aws/aws-sdk-go-v2/internal/timeconv
+# github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.36
+## explicit; go 1.22
+github.com/aws/aws-sdk-go-v2/internal/configsources
+# github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.36
+## explicit; go 1.22
+github.com/aws/aws-sdk-go-v2/internal/endpoints/v2
+# github.com/aws/aws-sdk-go-v2/service/eks v1.64.0
+## explicit; go 1.22
+github.com/aws/aws-sdk-go-v2/service/eks
+github.com/aws/aws-sdk-go-v2/service/eks/internal/endpoints
+github.com/aws/aws-sdk-go-v2/service/eks/types
+# github.com/aws/smithy-go v1.22.4
+## explicit; go 1.22
+github.com/aws/smithy-go
+github.com/aws/smithy-go/auth
+github.com/aws/smithy-go/auth/bearer
+github.com/aws/smithy-go/context
+github.com/aws/smithy-go/document
+github.com/aws/smithy-go/encoding
+github.com/aws/smithy-go/encoding/httpbinding
+github.com/aws/smithy-go/encoding/json
+github.com/aws/smithy-go/endpoints
+github.com/aws/smithy-go/internal/sync/singleflight
+github.com/aws/smithy-go/io
+github.com/aws/smithy-go/logging
+github.com/aws/smithy-go/metrics
+github.com/aws/smithy-go/middleware
+github.com/aws/smithy-go/ptr
+github.com/aws/smithy-go/rand
+github.com/aws/smithy-go/time
+github.com/aws/smithy-go/tracing
+github.com/aws/smithy-go/transport/http
+github.com/aws/smithy-go/transport/http/internal/io
+github.com/aws/smithy-go/waiter
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
@@ -135,8 +187,8 @@ github.com/cenkalti/backoff/v5
 # github.com/cespare/xxhash/v2 v2.3.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
-# github.com/cloudflare/circl v1.3.7
-## explicit; go 1.19
+# github.com/cloudflare/circl v1.6.1
+## explicit; go 1.22.0
 github.com/cloudflare/circl/dh/x25519
 github.com/cloudflare/circl/dh/x448
 github.com/cloudflare/circl/ecc/goldilocks
@@ -191,7 +243,7 @@ github.com/fsnotify/fsnotify/internal
 # github.com/fxamacker/cbor/v2 v2.7.0
 ## explicit; go 1.17
 github.com/fxamacker/cbor/v2
-# github.com/go-logr/logr v1.4.2
+# github.com/go-logr/logr v1.4.3
 ## explicit; go 1.18
 github.com/go-logr/logr
 github.com/go-logr/logr/funcr
@@ -503,7 +555,7 @@ go.etcd.io/etcd/client/v3/kubernetes
 ## explicit; go 1.22.0
 go.opentelemetry.io/auto/sdk
 go.opentelemetry.io/auto/sdk/internal/telemetry
-# go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0
+# go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0
 ## explicit; go 1.22.0
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/internal
@@ -583,7 +635,7 @@ go.uber.org/zap/internal/pool
 go.uber.org/zap/internal/stacktrace
 go.uber.org/zap/zapcore
 go.uber.org/zap/zapgrpc
-# golang.org/x/crypto v0.38.0
+# golang.org/x/crypto v0.39.0
 ## explicit; go 1.23.0
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blake2b
@@ -604,7 +656,7 @@ golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 # golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 ## explicit; go 1.23.0
 golang.org/x/exp/slices
-# golang.org/x/mod v0.24.0
+# golang.org/x/mod v0.25.0
 ## explicit; go 1.23.0
 golang.org/x/mod/semver
 # golang.org/x/net v0.40.0
@@ -625,7 +677,7 @@ golang.org/x/net/websocket
 ## explicit; go 1.23.0
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sync v0.14.0
+# golang.org/x/sync v0.15.0
 ## explicit; go 1.23.0
 golang.org/x/sync/errgroup
 golang.org/x/sync/singleflight
@@ -639,7 +691,7 @@ golang.org/x/sys/windows/registry
 # golang.org/x/term v0.32.0
 ## explicit; go 1.23.0
 golang.org/x/term
-# golang.org/x/text v0.25.0
+# golang.org/x/text v0.26.0
 ## explicit; go 1.23.0
 golang.org/x/text/cases
 golang.org/x/text/encoding
@@ -673,7 +725,7 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.11.0
 ## explicit; go 1.23.0
 golang.org/x/time/rate
-# golang.org/x/tools v0.31.0
+# golang.org/x/tools v0.33.0
 ## explicit; go 1.23.0
 golang.org/x/tools/cover
 golang.org/x/tools/go/ast/inspector
@@ -705,7 +757,7 @@ gomodules.xyz/wait
 # gomodules.xyz/x v0.0.17
 ## explicit; go 1.22.0
 gomodules.xyz/x/version
-# google.golang.org/genproto/googleapis/api v0.0.0-20250519155744-55703ea1f237
+# google.golang.org/genproto/googleapis/api v0.0.0-20250528174236-200df99c418a
 ## explicit; go 1.23.0
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
@@ -716,7 +768,7 @@ google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/errdetails
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.72.1
+# google.golang.org/grpc v1.72.2
 ## explicit; go 1.23
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -1541,7 +1593,7 @@ sigs.k8s.io/apiserver-network-proxy/konnectivity-client/pkg/client
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client/pkg/client/metrics
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client/pkg/common/metrics
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client/proto/client
-# sigs.k8s.io/cluster-api v1.10.2
+# sigs.k8s.io/cluster-api v1.10.3
 ## explicit; go 1.23.0
 sigs.k8s.io/cluster-api/api/addons/v1beta1
 sigs.k8s.io/cluster-api/api/v1beta1
@@ -1619,7 +1671,7 @@ sigs.k8s.io/cluster-api/util/topology
 sigs.k8s.io/cluster-api/util/version
 sigs.k8s.io/cluster-api/util/yaml
 sigs.k8s.io/cluster-api/version
-# sigs.k8s.io/cluster-api-provider-aws/v2 v2.8.2 => github.com/kluster-api/cluster-api-provider-aws/v2 v2.8.2-0.20250528212555-5fe46c7d45c0
+# sigs.k8s.io/cluster-api-provider-aws/v2 v2.8.4 => sigs.k8s.io/cluster-api-provider-aws/v2 v2.8.2-0.20250702183725-faf2fdc10b22
 ## explicit; go 1.23.0
 sigs.k8s.io/cluster-api-provider-aws/v2/api/v1beta2
 sigs.k8s.io/cluster-api-provider-aws/v2/controlplane/eks/api/v1beta2
@@ -1627,7 +1679,7 @@ sigs.k8s.io/cluster-api-provider-aws/v2/feature
 sigs.k8s.io/cluster-api-provider-aws/v2/iam/api/v1beta1
 sigs.k8s.io/cluster-api-provider-aws/v2/pkg/eks
 sigs.k8s.io/cluster-api-provider-aws/v2/pkg/hash
-# sigs.k8s.io/cluster-api-provider-azure v1.15.0 => sigs.k8s.io/cluster-api-provider-azure v1.19.1-0.20250530154618-36257000e802
+# sigs.k8s.io/cluster-api-provider-azure v1.20.1
 ## explicit; go 1.23.2
 sigs.k8s.io/cluster-api-provider-azure/api/v1beta1
 sigs.k8s.io/cluster-api-provider-azure/feature
@@ -1635,7 +1687,7 @@ sigs.k8s.io/cluster-api-provider-azure/util/azure
 sigs.k8s.io/cluster-api-provider-azure/util/ssh
 sigs.k8s.io/cluster-api-provider-azure/util/versions
 sigs.k8s.io/cluster-api-provider-azure/util/webhook
-# sigs.k8s.io/cluster-api-provider-gcp v1.6.1 => sigs.k8s.io/cluster-api-provider-gcp v1.9.1-0.20250529093617-7aa05f2d534e
+# sigs.k8s.io/cluster-api-provider-gcp v1.10.0
 ## explicit; go 1.23.7
 sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1
 sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1
@@ -1709,6 +1761,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
-# sigs.k8s.io/cluster-api-provider-aws/v2 => github.com/kluster-api/cluster-api-provider-aws/v2 v2.8.2-0.20250528212555-5fe46c7d45c0
-# sigs.k8s.io/cluster-api-provider-azure => sigs.k8s.io/cluster-api-provider-azure v1.19.1-0.20250530154618-36257000e802
-# sigs.k8s.io/cluster-api-provider-gcp => sigs.k8s.io/cluster-api-provider-gcp v1.9.1-0.20250529093617-7aa05f2d534e
+# sigs.k8s.io/cluster-api-provider-aws/v2 => sigs.k8s.io/cluster-api-provider-aws/v2 v2.8.2-0.20250702183725-faf2fdc10b22
