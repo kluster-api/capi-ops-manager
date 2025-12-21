@@ -57,13 +57,14 @@ func (r *ClusterOpsRequestReconciler) updateControlPlaneVersion(cluster *capi.Cl
 	var reKey bool
 	var err error
 	namespacedName := types.NamespacedName{Namespace: cluster.Spec.ControlPlaneRef.Namespace, Name: cluster.Spec.ControlPlaneRef.Name}
-	if cluster.Spec.ControlPlaneRef.Kind == capz.AzureManagedControlPlaneKind {
+	switch cluster.Spec.ControlPlaneRef.Kind {
+	case capz.AzureManagedControlPlaneKind:
 		reKey, err = r.updateAzureManagedControlPlane(namespacedName, clusterOps)
-	} else if cluster.Spec.ControlPlaneRef.Kind == GCPManagedControlPlaneKind {
+	case GCPManagedControlPlaneKind:
 		reKey, err = r.updateGCPManagedControlPlane(namespacedName, clusterOps)
-	} else if cluster.Spec.ControlPlaneRef.Kind == capa.AWSManagedControlPlaneKind {
+	case capa.AWSManagedControlPlaneKind:
 		reKey, err = r.updateAWSManagedControlPlane(namespacedName, clusterOps)
-	} else {
+	default:
 		err = fmt.Errorf("unknown Control Plane Kind")
 	}
 	if err != nil {

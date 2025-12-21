@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	genericapiserver "k8s.io/apiserver/pkg/server"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	clientscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -44,7 +43,7 @@ var (
 )
 
 func init() {
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(clientscheme.AddToScheme(scheme))
 	utilruntime.Must(catalogv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(opsv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(capi.AddToScheme(scheme))
